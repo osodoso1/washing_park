@@ -1,0 +1,468 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0EE9AF7737BEE39CD2568F78 /* PickleBracketApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB4353F5636EAE79D669E89 /* PickleBracketApp.swift */; };
+		128E0316AA26C311D671223E /* BracketModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309383D0C645C5C94119A61A /* BracketModels.swift */; };
+		132AA193535DEEFCD0EEA253 /* TournamentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F35BD40E9AE8F4CBC3E592 /* TournamentListView.swift */; };
+		2354E0FC3A3640FDC6974468 /* TournamentBracketEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E84EC342DBFA7851E163CA /* TournamentBracketEngine.swift */; };
+		5A11BAB24A56A4FA9DF5868A /* CreateLeagueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCA94F909FB8FF3982B0FE81 /* CreateLeagueView.swift */; };
+		7A21D80919112C2EE0439D8B /* PodiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30E212D0CFB9B43E5A42E1A2 /* PodiumView.swift */; };
+		835FA4854023A1AF958846C7 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78D691685D1D76066DCCFBD /* RootTabView.swift */; };
+		8620F30E35CDCF4ABB4A10FB /* MatchScoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B3D1865D050DE49189A867 /* MatchScoreSheet.swift */; };
+		9D6E08F869E653713590F671 /* TournamentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D138263FCF037693FC551F9 /* TournamentDetailView.swift */; };
+		A32AB3D9BCD33BD3E3E29491 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 65346AE5DCD5BD2B19DF4E28 /* Assets.xcassets */; };
+		B44782A7844BD4F18150F0DE /* DUPRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1364168F557F06906C57BF /* DUPRService.swift */; };
+		C2FDFF27C1B93810C0F76BBE /* BracketTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B8463E4CADDD5802035C4A /* BracketTheme.swift */; };
+		CAD56504F326D8CBEF43CA40 /* BracketTreeCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC8291F7F0E1D04DB9AEFB91 /* BracketTreeCanvas.swift */; };
+		E21138ED77595B1405F51C32 /* CreateTournamentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAA17CD3C8B41CAEC5EC98B /* CreateTournamentView.swift */; };
+		E8F92322735CD77D572BB6F8 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B46226135A354AE5F998822 /* UserProfileView.swift */; };
+		F205D96991760F74D268C313 /* LeagueEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B2619E12655CDA4EA63F7A /* LeagueEngine.swift */; };
+		FD96D168CBC627BB7E92E36C /* LeagueDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F813E78E19DC44DD50095685 /* LeagueDashboardView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01F35BD40E9AE8F4CBC3E592 /* TournamentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentListView.swift; sourceTree = "<group>"; };
+		0B46226135A354AE5F998822 /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileView.swift; sourceTree = "<group>"; };
+		11E84EC342DBFA7851E163CA /* TournamentBracketEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentBracketEngine.swift; sourceTree = "<group>"; };
+		22B3D1865D050DE49189A867 /* MatchScoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchScoreSheet.swift; sourceTree = "<group>"; };
+		309383D0C645C5C94119A61A /* BracketModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketModels.swift; sourceTree = "<group>"; };
+		30E212D0CFB9B43E5A42E1A2 /* PodiumView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodiumView.swift; sourceTree = "<group>"; };
+		3D138263FCF037693FC551F9 /* TournamentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentDetailView.swift; sourceTree = "<group>"; };
+		65346AE5DCD5BD2B19DF4E28 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		72B2619E12655CDA4EA63F7A /* LeagueEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueEngine.swift; sourceTree = "<group>"; };
+		89B8463E4CADDD5802035C4A /* BracketTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketTheme.swift; sourceTree = "<group>"; };
+		8EB4353F5636EAE79D669E89 /* PickleBracketApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleBracketApp.swift; sourceTree = "<group>"; };
+		997736468EEAAAB3E29632A3 /* PickleBracket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PickleBracket.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFAA17CD3C8B41CAEC5EC98B /* CreateTournamentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateTournamentView.swift; sourceTree = "<group>"; };
+		B78D691685D1D76066DCCFBD /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		BC8291F7F0E1D04DB9AEFB91 /* BracketTreeCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketTreeCanvas.swift; sourceTree = "<group>"; };
+		BCA94F909FB8FF3982B0FE81 /* CreateLeagueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateLeagueView.swift; sourceTree = "<group>"; };
+		DF1364168F557F06906C57BF /* DUPRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DUPRService.swift; sourceTree = "<group>"; };
+		F813E78E19DC44DD50095685 /* LeagueDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueDashboardView.swift; sourceTree = "<group>"; };
+		F96B46E1B7D7BE843850CCB1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2B5491406584BB3F6B59E500 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				65346AE5DCD5BD2B19DF4E28 /* Assets.xcassets */,
+				F96B46E1B7D7BE843850CCB1 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		35A18F84D23356056DB03185 /* League */ = {
+			isa = PBXGroup;
+			children = (
+				BCA94F909FB8FF3982B0FE81 /* CreateLeagueView.swift */,
+				F813E78E19DC44DD50095685 /* LeagueDashboardView.swift */,
+			);
+			path = League;
+			sourceTree = "<group>";
+		};
+		4F382CD16F285B1CEEF29F95 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				0B46226135A354AE5F998822 /* UserProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		64B8ED677FB5B41B276DAF93 /* Bracket */ = {
+			isa = PBXGroup;
+			children = (
+				BC8291F7F0E1D04DB9AEFB91 /* BracketTreeCanvas.swift */,
+				22B3D1865D050DE49189A867 /* MatchScoreSheet.swift */,
+			);
+			path = Bracket;
+			sourceTree = "<group>";
+		};
+		7FD17CE4F56BC0A3B4F38064 = {
+			isa = PBXGroup;
+			children = (
+				B352A12786F9DCE5914E6E74 /* PickleBracket */,
+				BC882628E289CE1FB24C059C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A233F040FB7E3821E962CCB2 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				309383D0C645C5C94119A61A /* BracketModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B352A12786F9DCE5914E6E74 /* PickleBracket */ = {
+			isa = PBXGroup;
+			children = (
+				D028788BC53BDBF250F60FB5 /* App */,
+				A233F040FB7E3821E962CCB2 /* Models */,
+				2B5491406584BB3F6B59E500 /* Resources */,
+				D4A7D41B872B90D7F9901611 /* Services */,
+				B7AA56D3509D9B274D28ABA5 /* Theme */,
+				DF37254C7BF4AF190182EE26 /* Views */,
+			);
+			path = PickleBracket;
+			sourceTree = "<group>";
+		};
+		B7AA56D3509D9B274D28ABA5 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				89B8463E4CADDD5802035C4A /* BracketTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		BC882628E289CE1FB24C059C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				997736468EEAAAB3E29632A3 /* PickleBracket.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C41358465ECE99A87BBB0AD1 /* Tournament */ = {
+			isa = PBXGroup;
+			children = (
+				AFAA17CD3C8B41CAEC5EC98B /* CreateTournamentView.swift */,
+				30E212D0CFB9B43E5A42E1A2 /* PodiumView.swift */,
+				3D138263FCF037693FC551F9 /* TournamentDetailView.swift */,
+				01F35BD40E9AE8F4CBC3E592 /* TournamentListView.swift */,
+			);
+			path = Tournament;
+			sourceTree = "<group>";
+		};
+		D028788BC53BDBF250F60FB5 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				8EB4353F5636EAE79D669E89 /* PickleBracketApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D4A7D41B872B90D7F9901611 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DF1364168F557F06906C57BF /* DUPRService.swift */,
+				72B2619E12655CDA4EA63F7A /* LeagueEngine.swift */,
+				11E84EC342DBFA7851E163CA /* TournamentBracketEngine.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DF37254C7BF4AF190182EE26 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B78D691685D1D76066DCCFBD /* RootTabView.swift */,
+				64B8ED677FB5B41B276DAF93 /* Bracket */,
+				35A18F84D23356056DB03185 /* League */,
+				4F382CD16F285B1CEEF29F95 /* Profile */,
+				C41358465ECE99A87BBB0AD1 /* Tournament */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		584B2D34758E0F73B19D2807 /* PickleBracket */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EF10A24BCE9C5093BF9F5A1 /* Build configuration list for PBXNativeTarget "PickleBracket" */;
+			buildPhases = (
+				56A3554D8539F575FCD0E0BE /* Sources */,
+				199286FA6181121318BCBFD5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PickleBracket;
+			packageProductDependencies = (
+			);
+			productName = PickleBracket;
+			productReference = 997736468EEAAAB3E29632A3 /* PickleBracket.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DD71C08FA8D03831ECFD27AE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					584B2D34758E0F73B19D2807 = {
+						DevelopmentTeam = 5Q77AM8FH4;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F4F79A6A6BB967280F2CE8E1 /* Build configuration list for PBXProject "PickleBracket" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7FD17CE4F56BC0A3B4F38064;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BC882628E289CE1FB24C059C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				584B2D34758E0F73B19D2807 /* PickleBracket */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		199286FA6181121318BCBFD5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A32AB3D9BCD33BD3E3E29491 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		56A3554D8539F575FCD0E0BE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				128E0316AA26C311D671223E /* BracketModels.swift in Sources */,
+				C2FDFF27C1B93810C0F76BBE /* BracketTheme.swift in Sources */,
+				CAD56504F326D8CBEF43CA40 /* BracketTreeCanvas.swift in Sources */,
+				5A11BAB24A56A4FA9DF5868A /* CreateLeagueView.swift in Sources */,
+				E21138ED77595B1405F51C32 /* CreateTournamentView.swift in Sources */,
+				B44782A7844BD4F18150F0DE /* DUPRService.swift in Sources */,
+				FD96D168CBC627BB7E92E36C /* LeagueDashboardView.swift in Sources */,
+				F205D96991760F74D268C313 /* LeagueEngine.swift in Sources */,
+				8620F30E35CDCF4ABB4A10FB /* MatchScoreSheet.swift in Sources */,
+				0EE9AF7737BEE39CD2568F78 /* PickleBracketApp.swift in Sources */,
+				7A21D80919112C2EE0439D8B /* PodiumView.swift in Sources */,
+				835FA4854023A1AF958846C7 /* RootTabView.swift in Sources */,
+				2354E0FC3A3640FDC6974468 /* TournamentBracketEngine.swift in Sources */,
+				9D6E08F869E653713590F671 /* TournamentDetailView.swift in Sources */,
+				132AA193535DEEFCD0EEA253 /* TournamentListView.swift in Sources */,
+				E8F92322735CD77D572BB6F8 /* UserProfileView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5D9B7EBE91EC416715FFC38E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PickleBracket/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.picklebracket;
+				PRODUCT_NAME = PickleBracket;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		95E0114BBD4152A8EC43794A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AEE01C3070B85A7842312CFB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PickleBracket/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.picklebracket;
+				PRODUCT_NAME = PickleBracket;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BFDB00D93C205BBFC90B7FC0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0EF10A24BCE9C5093BF9F5A1 /* Build configuration list for PBXNativeTarget "PickleBracket" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AEE01C3070B85A7842312CFB /* Debug */,
+				5D9B7EBE91EC416715FFC38E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F4F79A6A6BB967280F2CE8E1 /* Build configuration list for PBXProject "PickleBracket" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFDB00D93C205BBFC90B7FC0 /* Debug */,
+				95E0114BBD4152A8EC43794A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DD71C08FA8D03831ECFD27AE /* Project object */;
+}

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PicklePark: Washington Park Pickleball & Live Queue</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA Manifest & Meta -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#C6F24F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PicklePark">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen pb-12">
+
+  <!-- PWA Install Banner for Android Chrome -->
+  <div id="install-banner" class="hidden bg-[#0B4F6C] text-white px-4 py-2.5 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-2 text-xs font-bold">
+      <span>🎾</span> Install PicklePark to Home Screen
+    </div>
+    <button id="install-btn" class="bg-[#C6F24F] text-slate-900 text-xs font-black px-3 py-1.5 rounded-lg shadow">
+      Install
+    </button>
+  </div>
+
+  <main class="max-w-md mx-auto px-4 pt-5 space-y-4">
+    
+    <!-- Top Navigation Bar -->
+    <header class="relative flex items-center justify-center py-2">
+      <h1 class="text-lg font-black text-slate-900 tracking-tight">
+        PicklePark
+      </h1>
+      <div class="absolute right-0 flex items-center gap-1 bg-white border border-slate-200/80 rounded-full px-2.5 py-1.5 shadow-sm">
+        <button onclick="openPickleMatchModal()" class="text-blue-600 hover:text-blue-700 p-1" title="PickleMatch: Doubles Rotations & Scores">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-500 fill-amber-500"></i>
+        </button>
+        <button onclick="openModal('feedback-modal')" class="text-blue-600 hover:text-blue-700 p-1" title="Send Dev Feedback">
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+        </button>
+        <button onclick="location.reload()" class="text-blue-600 hover:text-blue-700 p-1" title="Refresh">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 1. HERO STATUS CARD: COURTS 1, 2 & 3 OVERVIEW & WEATHER -->
+    <section class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3.5">
+      <!-- Title & Live Badge -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Washington Park</h2>
+          <div class="text-xs text-slate-500 font-medium">Burlingame, CA · Courts 1, 2 & 3</div>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs font-bold rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live City Feed
+        </div>
+      </div>
+
+      <!-- Weather & AQI Strip Inside Card -->
+      <div class="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+          <span id="aqi-text">🟢 AQI 38 · Good</span>
+          <span class="text-slate-400">·</span>
+          <span id="weather-text"><span>⛅️</span> 65°F | 💨 8 mph NNW</span>
+        </div>
+        <div class="text-[11px] font-semibold text-slate-400">Court Weather</div>
+      </div>
+
+      <!-- Clubhouse Hours Quick Strip -->
+      <div onclick="openModal('clubhouse-modal')" class="bg-blue-50/80 hover:bg-blue-100/80 border border-blue-100/90 rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition">
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+          <span class="text-blue-600">🏛️</span>
+          <span>Clubhouse: 8 AM–7 PM · Court Lights: Dusk–10 PM</span>
+        </div>
+        <div class="text-[11px] font-bold text-blue-600 flex items-center gap-0.5">
+          <span>Hours</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        </div>
+      </div>
+
+      <!-- Court Type Tags -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-2.5">
+          <div class="text-emerald-600 text-lg">🏃‍♂️</div>
+          <div>
+            <div class="text-xs font-bold text-slate-900">Court 1</div>
+            <div class="text-[10px] text-slate-500 font-medium">Open Play (4 PB)</div>
+          </div>
+        </div>
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-2.5">
+          <div class="text-blue-600 text-base">📅</div>
+          <div>
+            <div class="text-xs font-bold text-slate-900">Courts 2 & 3</div>
+            <div class="text-[10px] text-slate-500 font-medium">Reservable</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1-Tap Reserve on WebTrac Action Button -->
+      <a href="https://www.burlingame.org/rec" target="_blank" class="w-full py-3.5 px-4 bg-[#84D800] hover:bg-[#76C500] text-slate-950 font-black text-xs rounded-2xl shadow-sm transition flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+          <span>Reserve Courts 2 & 3 on WebTrac</span>
+        </div>
+        <span class="text-base font-bold">→</span>
+      </a>
+    </section>
+
+    <!-- ON-COURT DOUBLES MATCH COMPANION (PickleMatch) -->
+    <section onclick="openPickleMatchModal()" class="bg-[#082a52] hover:bg-[#062040] cursor-pointer rounded-3xl p-3.5 border border-sky-900/60 shadow-sm transition flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-[#C6F24F]/20 text-[#C6F24F] flex items-center justify-center font-bold text-sm">
+          ⚡️
+        </div>
+        <div>
+          <div class="text-xs font-black text-white tracking-tight flex items-center gap-1.5">
+            <span>On-Court Doubles: PickleMatch</span>
+            <span class="px-1.5 py-0.5 rounded bg-[#C6F24F] text-slate-950 text-[9px] font-black uppercase">Instant</span>
+          </div>
+          <div class="text-[11px] text-slate-300 font-medium">Fair doubles rotations, sitting queue & live scores</div>
+        </div>
+      </div>
+      <button class="px-3 py-1.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 rounded-xl font-black text-xs shadow-sm transition">
+        Let's Play ↗
+      </button>
+    </section>
+
+    <!-- 2. LIVE QUEUE & COURT ACTIVITY CARD (TIME TO PICKLE ?) -->
+    <section class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3.5">
+      <div class="text-center pt-1">
+        <div class="text-xs font-black tracking-wider text-[#0B4F6C] uppercase">TIME TO PICKLE ?</div>
+        <div class="text-sm font-black text-slate-800 tracking-tight">COURT ACTIVITY @ WASHINGTON PARK</div>
+        <div class="text-[11px] text-slate-500 font-medium">850 Burlingame Ave, Burlingame, CA</div>
+      </div>
+
+      <!-- 3 Reordered Metric Cards: Courts in Use | People in Queue | Walk-On Courts -->
+      <div class="grid grid-cols-3 gap-2">
+        <!-- Courts in Use -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 text-center">
+          <div class="text-emerald-600 flex justify-center mb-1">
+            <i data-lucide="activity" class="w-5 h-5"></i>
+          </div>
+          <div id="metric-courts" class="text-2xl font-black text-emerald-600">4</div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Courts in Use</div>
+        </div>
+
+        <!-- People in Queue -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 text-center">
+          <div class="text-amber-500 flex justify-center mb-1">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <div id="metric-queue" class="text-2xl font-black text-amber-500">0</div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">People in Queue</div>
+        </div>
+
+        <!-- Walk-On Courts -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 text-center">
+          <div class="text-purple-600 flex justify-center mb-1">
+            <i data-lucide="maximize-2" class="w-5 h-5"></i>
+          </div>
+          <div id="metric-walkon" class="text-2xl font-black text-purple-600">4</div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Walk-On Courts</div>
+        </div>
+      </div>
+
+      <!-- Timestamps -->
+      <div class="text-center space-y-0.5 text-[11px]">
+        <div class="font-bold text-slate-700">Last Reported: <span id="last-report-time">Just now</span></div>
+        <div class="text-emerald-600 font-medium flex items-center justify-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Cloud Synced
+        </div>
+      </div>
+
+      <!-- Past Updates -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-bold text-slate-800">Past Updates</div>
+        <div id="prior-updates-list" class="space-y-1"></div>
+      </div>
+
+      <!-- Action Button: [ Input Activity ] -->
+      <button onclick="openModal('activity-modal')" class="w-full py-3.5 bg-[#0B4F6C] hover:bg-sky-900 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+        <i data-lucide="edit-3" class="w-4 h-4"></i> Input Activity
+      </button>
+    </section>
+
+    <!-- 3. WALK-ON COURTS 2 & 3 SIDES MANAGER -->
+    <section class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-bold text-slate-900">Courts 2 & 3 Walk-On Sides</div>
+          <div class="text-[11px] text-slate-500">2 portable nets per court (up to 4 PB)</div>
+        </div>
+        <div id="walkon-summary-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+          🟢 4 PB · All Open
+        </div>
+      </div>
+
+      <!-- Court 2 -->
+      <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2">
+        <div class="text-xs font-bold text-slate-800">Court 2 (North Tennis Court)</div>
+        <div id="court-2-buttons" class="flex gap-1.5"></div>
+      </div>
+
+      <!-- Court 3 -->
+      <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2">
+        <div class="text-xs font-bold text-slate-800">Court 3 (South Tennis Court)</div>
+        <div id="court-3-buttons" class="flex gap-1.5"></div>
+      </div>
+    </section>
+
+    <!-- 4. COMMUNITY LEADERBOARD & SNACK MVP -->
+    <section class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-black uppercase tracking-wider text-slate-400">Burlingame Community</div>
+          <div class="text-sm font-bold text-slate-900">Snack MVP Leaderboard</div>
+        </div>
+        <button onclick="openModal('profile-modal')" class="text-xs font-bold text-blue-600 hover:underline">
+          Edit Profile
+        </button>
+      </div>
+
+      <!-- Scope Switcher -->
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs">
+        <button onclick="state.leaderboardScope='thisMonth'; render();" class="flex-1 py-1.5 rounded-lg font-bold text-center transition" id="scope-month">
+          This Month
+        </button>
+        <button onclick="state.leaderboardScope='allTime'; render();" class="flex-1 py-1.5 rounded-lg font-bold text-center transition" id="scope-all">
+          All-Time
+        </button>
+      </div>
+
+      <!-- Snack MVP Spotlight -->
+      <div id="snack-mvp-banner"></div>
+
+      <!-- Leaderboard List -->
+      <div id="leaderboard-list" class="space-y-1.5"></div>
+    </section>
+
+    <!-- 5. RESERVABLE COURTS SCHEDULE (WEBTRAC) - AT THE BOTTOM -->
+    <section class="space-y-3 pt-2">
+      <!-- Scope Switcher: [ Today | 7 Days | Month ] -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl gap-1">
+        <button id="scope-btn-today" onclick="setScheduleScope('today')" class="flex-1 py-2 rounded-xl font-bold text-xs bg-[#C6F24F] text-slate-900 shadow-sm transition">
+          Today
+        </button>
+        <button id="scope-btn-7days" onclick="setScheduleScope('sevenDays')" class="flex-1 py-2 rounded-xl font-medium text-xs text-slate-500 hover:text-slate-900 transition">
+          7 Days
+        </button>
+        <button id="scope-btn-month" onclick="setScheduleScope('month')" class="flex-1 py-2 rounded-xl font-medium text-xs text-slate-500 hover:text-slate-900 transition">
+          Month
+        </button>
+      </div>
+
+      <!-- Reservable Courts 2 & 3 Dynamic Container -->
+      <div id="reservable-schedule-container" class="space-y-3"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="pt-8 pb-12 text-center text-xs text-slate-400 space-y-3 border-t border-slate-200 mt-6">
+      <div class="flex items-center justify-center gap-4 text-xs font-semibold text-slate-600">
+        <button onclick="openModal('privacy-modal')" class="hover:text-emerald-600 underline">Privacy Policy</button>
+        <span>•</span>
+        <button onclick="openModal('feedback-modal')" class="hover:text-emerald-600 underline">Support & Feedback</button>
+        <span>•</span>
+        <span>v1.0.0</span>
+      </div>
+      <p class="text-[11px] text-slate-400">PicklePark · Built with 🎾 for the Washington Park Pickleball Community</p>
+      <!-- Commented out for future use (active in Feedback modal)
+      <div class="flex flex-col items-center gap-2 pt-1">
+        <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Huge thanks to our Patreon supporters for their continued use & backing!</p>
+        <a href="https://www.buymeacoffee.com/osodoso" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FFDD00] text-slate-950 font-bold text-xs rounded-full shadow-sm hover:opacity-90 transition">
+          <span>☕️</span>
+          <span>Buy me a coffee</span>
+        </a>
+      </div>
+      -->
+    </footer>
+
+  </main>
+
+  <!-- MODAL: PRIVACY POLICY -->
+  <div id="privacy-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 space-y-4 shadow-xl max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-base text-slate-900">Privacy Policy</h3>
+        <button onclick="closeModal('privacy-modal')" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
+        <p><strong>Effective Date:</strong> August 30, 2026</p>
+        <p><strong>PicklePark</strong> is committed to protecting your privacy. We believe in providing simple, community-driven tools with zero invasive tracking.</p>
+        
+        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">1. Information We Collect</h4>
+        <p>PicklePark does not require account creation, passwords, phone numbers, or email addresses to use the app. Any display name, match score, or leaderboard point you choose to input is stored locally on your device or submitted anonymously to community counters.</p>
+
+        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">2. No Third-Party Tracking</h4>
+        <p>We do not sell, rent, or trade your personal information. We do not use third-party analytics trackers, advertising SDKs, or location brokers.</p>
+
+        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">3. Local Device Storage</h4>
+        <p>Tournament rosters, doubles rotation lineups, and profile preferences are stored locally on your device using standard Apple iOS storage and web local storage.</p>
+
+        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">4. Contact Support</h4>
+        <p>For questions or support regarding PicklePark, visit <a href="https://washingtonpb.pages.dev" class="text-emerald-600 underline">washingtonpb.pages.dev</a> or use the in-app feedback tool.</p>
+      </div>
+
+      <button onclick="closeModal('privacy-modal')" class="w-full py-3 bg-[#0B4F6C] text-white rounded-xl font-bold text-xs shadow hover:bg-sky-900 transition">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 1: INPUT ACTIVITY -->
+  <div id="activity-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-base text-slate-900">Input Court Activity</h3>
+        <button onclick="closeModal('activity-modal')" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <!-- 4-Hour Points Banner -->
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs flex items-center gap-2.5">
+        <span class="text-lg">🍪</span>
+        <div class="text-amber-900 font-medium">
+          <strong>Fair Play Rules:</strong> Update whenever you like! Leaderboard points (+10 pts) are earned once every 4 hours.
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Courts in Use (Court 1)</label>
+          <div class="flex gap-1.5" id="modal-courts-pills">
+            <button onclick="selectModalPill('courts', 4)" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold">4</button>
+            <button onclick="selectModalPill('courts', 3)" class="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold">3</button>
+            <button onclick="selectModalPill('courts', 2)" class="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold">2</button>
+            <button onclick="selectModalPill('courts', 1)" class="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold">1</button>
+            <button onclick="selectModalPill('courts', 0)" class="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold">0</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">People in Queue</label>
+          <input id="modal-queue-input" type="number" value="6" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Reporter Name (Optional)</label>
+          <input id="modal-name-input" type="text" placeholder="Player" value="Player (You)" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm">
+        </div>
+      </div>
+
+      <button onclick="submitModalActivity()" class="w-full py-3 bg-[#0B4F6C] text-white rounded-xl font-bold text-xs shadow hover:bg-sky-900 transition">
+        Submit Activity
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 2: EDIT PROFILE & SNACK -->
+  <div id="profile-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-base text-slate-900">Your Profile & Snack MVP</h3>
+        <button onclick="closeModal('profile-modal')" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Your Name / Handle</label>
+          <input id="profile-name-input" type="text" value="Player (You)" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Favorite Snack / Drink</label>
+          <input id="profile-snack-input" type="text" value="Cold Coconut Water & RXBar" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Avatar Emoji</label>
+          <div class="flex gap-2 text-xl" id="avatar-picker">
+            <button onclick="setAvatar('🎾')" class="p-2 border rounded-lg bg-slate-50">🎾</button>
+            <button onclick="setAvatar('⚡️')" class="p-2 border rounded-lg">⚡️</button>
+            <button onclick="setAvatar('🧢')" class="p-2 border rounded-lg">🧢</button>
+            <button onclick="setAvatar('🔥')" class="p-2 border rounded-lg">🔥</button>
+            <button onclick="setAvatar('👑')" class="p-2 border rounded-lg">👑</button>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="saveProfile()" class="w-full py-3 bg-[#0B4F6C] text-white rounded-xl font-bold text-xs shadow hover:bg-sky-900 transition">
+        Save Profile
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: SEND ANONYMOUS DEV FEEDBACK -->
+  <div id="feedback-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-base text-slate-900">Send Community Feedback</h3>
+        <button onclick="closeModal('feedback-modal')" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Topic</label>
+          <select id="feedback-topic" class="w-full p-2.5 border border-slate-200 rounded-lg text-xs bg-white">
+            <option>Feature Request</option>
+            <option>Bug Report</option>
+            <option>Court / Schedule Issue</option>
+            <option>Snack Suggestion</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Suggestion (100% Anonymous)</label>
+          <textarea id="feedback-textarea" rows="3" placeholder="Tell us what you'd like added or improved for Washington Park..." class="w-full p-2.5 border border-slate-200 rounded-lg text-xs"></textarea>
+        </div>
+      </div>
+
+      <button onclick="submitFeedbackModal()" class="w-full py-3 bg-[#0B4F6C] text-white rounded-xl font-bold text-xs shadow hover:bg-sky-900 transition">
+        Post Feedback
+      </button>
+
+      <div class="pt-3 border-t border-slate-100 text-center space-y-2">
+        <p class="text-[11px] text-slate-500">Huge thanks to our Patreon supporters for their continued use & backing!</p>
+        <a href="https://www.buymeacoffee.com/osodoso" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FFDD00] text-slate-950 font-bold text-xs rounded-full shadow-sm hover:opacity-90 transition">
+          <span>☕️</span>
+          <span>Buy me a coffee</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: FULL-SCREEN NATIVE IN-APP PICKLEMATCH DOUBLES COMPANION -->
+  <div id="picklematch-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex flex-col items-center justify-center p-2 sm:p-4">
+    <div class="bg-[#082a52] w-full max-w-lg max-h-[92vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl border border-sky-800">
+      <!-- Modal Header -->
+      <div class="p-3.5 bg-[#051c36] flex items-center justify-between border-b border-sky-900">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚡️</span>
+          <div>
+            <h3 class="font-black text-sm text-white">PickleMatch · On-Court Doubles</h3>
+            <div class="text-[10px] text-slate-400">Zero accounts · Fair rotations & live scores</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="resetMatchSession()" class="px-2.5 py-1 text-xs text-slate-400 hover:text-white font-medium">
+            Reset
+          </button>
+          <button onclick="closeModal('picklematch-modal')" class="px-3.5 py-1.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-xl shadow transition">
+            Done ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body Scrollable -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        
+        <!-- Game Format Switcher [ Rotating Doubles | 🏆 Park Tournament ] -->
+        <div class="flex bg-black/40 p-1 rounded-2xl gap-1">
+          <button id="btn-format-rotation" onclick="switchGameFormat('rotation')" class="flex-1 py-2.5 bg-[#C6F24F] text-slate-950 font-black text-xs rounded-xl shadow-sm transition">
+            🎾 Rotating Doubles
+          </button>
+          <button id="btn-format-tourney" onclick="switchGameFormat('tournament')" class="flex-1 py-2.5 bg-white/10 text-white font-medium text-xs rounded-xl transition">
+            🏆 Park Tournament
+          </button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FORMAT A: ROTATING DOUBLES -->
+        <!-- ========================================== -->
+        <div id="pm-rotation-section" class="space-y-4">
+          <!-- 1. SETUP VIEW -->
+          <div id="pm-setup-view" class="space-y-4">
+            <!-- Header Banner -->
+            <div class="text-center space-y-1">
+              <div class="text-[11px] font-black text-[#C6F24F] uppercase tracking-wider">Doubles Rotation Engine</div>
+              <div class="text-lg font-black text-white">How many courts?</div>
+              <div class="text-xs text-slate-400">Pick court count, scoring rules, and player lineup.</div>
+            </div>
+
+            <!-- Courts Selector Grid (1, 2, 3, 4) -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2.5">
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span>Select Active Courts</span>
+                <span id="pm-court-summary" class="text-[#C6F24F] font-bold">8 / 8 playing</span>
+              </div>
+              <div class="grid grid-cols-4 gap-2">
+                <button onclick="setMatchCourts(1)" data-val="1" class="pm-court-btn py-2.5 bg-white/10 text-white rounded-xl font-bold text-xs">1</button>
+                <button onclick="setMatchCourts(2)" data-val="2" class="pm-court-btn py-2.5 bg-[#C6F24F] text-slate-950 rounded-xl font-bold text-xs">2</button>
+                <button onclick="setMatchCourts(3)" data-val="3" class="pm-court-btn py-2.5 bg-white/10 text-white rounded-xl font-bold text-xs">3</button>
+                <button onclick="setMatchCourts(4)" data-val="4" class="pm-court-btn py-2.5 bg-white/10 text-white rounded-xl font-bold text-xs">4</button>
+              </div>
+            </div>
+
+            <!-- Visual Court Diagrams Grid -->
+            <div class="bg-[#051c36] p-3.5 rounded-2xl border border-sky-900 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Court Layout Preview</div>
+              <div id="pm-diagrams-grid" class="grid grid-cols-2 gap-2"></div>
+            </div>
+
+            <!-- Scoring Format Selector (Side-Out, Rally, DreamBreaker) -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Scoring Format</div>
+              <div class="flex bg-black/20 p-1 rounded-xl gap-1 text-[11px]">
+                <button onclick="setMatchScoringFormat('sideOut')" data-val="sideOut" class="pm-scoring-btn flex-1 py-1.5 rounded-lg font-bold bg-[#C6F24F] text-slate-950">Side-Out</button>
+                <button onclick="setMatchScoringFormat('rally')" data-val="rally" class="pm-scoring-btn flex-1 py-1.5 rounded-lg font-medium text-white">Rally (MLP)</button>
+                <button onclick="setMatchScoringFormat('dreamBreaker')" data-val="dreamBreaker" class="pm-scoring-btn flex-1 py-1.5 rounded-lg font-medium text-white">DreamBreaker</button>
+              </div>
+            </div>
+
+            <!-- Matchmaking Mode -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skill Matchmaking Mode</div>
+              <div class="flex bg-black/20 p-1 rounded-xl gap-1 text-[11px]">
+                <button onclick="setMatchmakingMode('balanced')" data-val="balanced" class="pm-mode-btn flex-1 py-1.5 rounded-lg font-bold bg-[#C6F24F] text-slate-950">Balanced</button>
+                <button onclick="setMatchmakingMode('tiered')" data-val="tiered" class="pm-mode-btn flex-1 py-1.5 rounded-lg font-medium text-white">Tiered</button>
+                <button onclick="setMatchmakingMode('social')" data-val="social" class="pm-mode-btn flex-1 py-1.5 rounded-lg font-medium text-white">Social</button>
+              </div>
+            </div>
+
+            <!-- Target Score -->
+            <div class="bg-white/5 p-3 rounded-2xl border border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-white">Play To</span>
+              <div class="flex gap-1.5">
+                <button onclick="setMatchTargetScore(11)" data-val="11" class="pm-score-btn px-3 py-1 bg-[#C6F24F] text-slate-950 rounded-lg text-xs font-bold">11 Pts</button>
+                <button onclick="setMatchTargetScore(15)" data-val="15" class="pm-score-btn px-3 py-1 bg-white/10 text-white rounded-lg text-xs font-medium">15 Pts</button>
+                <button onclick="setMatchTargetScore(21)" data-val="21" class="pm-score-btn px-3 py-1 bg-white/10 text-white rounded-lg text-xs font-medium">21 Pts</button>
+              </div>
+            </div>
+
+            <!-- Player Lineup List with Clear All -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Players Lineup</div>
+                <div class="flex items-center gap-2">
+                  <span id="pm-player-count" class="text-[10px] font-bold text-[#C6F24F]">8 Players</span>
+                  <button onclick="clearMatchPlayers()" class="text-[10px] font-bold text-orange-400 hover:text-orange-300">🗑️ Clear All</button>
+                </div>
+              </div>
+
+              <!-- Add input with skill select -->
+              <div class="flex gap-1.5">
+                <input id="pm-new-player-input" type="text" placeholder="Player name..." onkeydown="if(event.key==='Enter') addMatchPlayer()" class="flex-1 p-2 bg-white/10 rounded-xl text-xs text-white placeholder-slate-400 border border-white/10">
+                <select id="pm-new-player-skill" class="bg-slate-800 text-[#C6F24F] font-bold text-xs p-2 rounded-xl border border-white/10">
+                  <option value="2.5">2.5 Beg</option>
+                  <option value="3.5" selected>3.5 Int</option>
+                  <option value="4.5">4.5 Adv</option>
+                  <option value="5.0">5.0 Pro</option>
+                </select>
+                <button onclick="addMatchPlayer()" class="px-3 py-2 bg-[#C6F24F] text-slate-950 font-black text-xs rounded-xl shadow hover:bg-lime-400">
+                  + Add
+                </button>
+              </div>
+
+              <div id="pm-players-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+            </div>
+
+            <button id="pm-start-btn" onclick="startMatchSession()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>⚡️</span> Start Match Rotations
+            </button>
+          </div>
+
+          <!-- 2. ACTIVE ROUND VIEW -->
+          <div id="pm-active-view" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <span id="pm-round-badge" class="px-2.5 py-1 bg-[#C6F24F]/20 text-[#C6F24F] font-black text-xs rounded-full">ROUND 1</span>
+              <span id="pm-target-label" class="text-xs text-slate-400 font-medium">First to 11 · Win by 2</span>
+            </div>
+
+            <!-- Dynamic Courts Container -->
+            <div id="pm-courts-container" class="space-y-3"></div>
+
+            <!-- Sitting Players -->
+            <div id="pm-sitters-container" class="hidden"></div>
+
+            <!-- Next Round Button -->
+            <button onclick="generateMatchNextRound()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>Next Round</span> ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FORMAT B: 🏆 PARK TOURNAMENT -->
+        <!-- ========================================== -->
+        <div id="pm-tournament-section" class="hidden space-y-4">
+          
+          <!-- 1. Tourney Setup View -->
+          <div id="tourney-view-setup" class="space-y-4">
+            <div class="text-center space-y-1">
+              <div class="text-[11px] font-black text-amber-400 uppercase tracking-wider">🏆 Park Tournament Mode</div>
+              <div class="text-lg font-black text-white">Pick Tournament Type & Scoring</div>
+              <div class="text-xs text-slate-400">Fixed Doubles or King of the Court individual rotations!</div>
+            </div>
+
+            <!-- Tournament Format Switcher (Fixed vs Rotating) -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tournament Format</div>
+              <div class="flex bg-black/20 p-1 rounded-xl gap-1 text-[11px]">
+                <button id="btn-tourn-type-fixed" onclick="setTourneyType('fixed')" class="flex-1 py-1.5 rounded-lg font-bold bg-[#C6F24F] text-slate-950">Fixed Teams</button>
+                <button id="btn-tourn-type-indiv" onclick="setTourneyType('rotating')" class="flex-1 py-1.5 rounded-lg font-medium text-white">King of Court (Rotating)</button>
+              </div>
+            </div>
+
+            <!-- Tournament Scoring Switcher -->
+            <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Scoring Format</div>
+              <div class="flex bg-black/20 p-1 rounded-xl gap-1 text-[11px]">
+                <button onclick="setTourneyScoringFormat('sideOut')" data-val="sideOut" class="tourn-scoring-btn flex-1 py-1.5 rounded-lg font-bold bg-[#C6F24F] text-slate-950">Side-Out</button>
+                <button onclick="setTourneyScoringFormat('rally')" data-val="rally" class="tourn-scoring-btn flex-1 py-1.5 rounded-lg font-medium text-white">Rally (MLP)</button>
+                <button onclick="setTourneyScoringFormat('dreamBreaker')" data-val="dreamBreaker" class="tourn-scoring-btn flex-1 py-1.5 rounded-lg font-medium text-white">DreamBreaker</button>
+              </div>
+            </div>
+
+            <!-- Fixed Teams Box -->
+            <div id="tourney-fixed-setup" class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Registered Teams</div>
+                <div class="flex items-center gap-2">
+                  <span id="tourney-teams-count" class="text-[10px] font-bold text-amber-400">4 Teams</span>
+                  <button onclick="clearTourneyTeams()" class="text-[10px] font-bold text-orange-400 hover:text-orange-300">🗑️ Clear All</button>
+                </div>
+              </div>
+
+              <!-- Add Team Form -->
+              <div class="space-y-2 bg-black/20 p-2.5 rounded-xl">
+                <input id="tourney-team-name-input" type="text" placeholder="Team Name (e.g. Dink Masters)..." class="w-full p-2 bg-white/10 rounded-lg text-xs text-white placeholder-slate-400 border border-white/10">
+                <div class="flex gap-1.5">
+                  <input id="tourney-p1-input" type="text" placeholder="Player 1..." class="flex-1 p-2 bg-white/10 rounded-lg text-xs text-white placeholder-slate-400 border border-white/10">
+                  <input id="tourney-p2-input" type="text" placeholder="Player 2..." class="flex-1 p-2 bg-white/10 rounded-lg text-xs text-white placeholder-slate-400 border border-white/10">
+                  <button onclick="addTourneyTeam()" class="px-3 py-2 bg-[#C6F24F] text-slate-950 font-black text-xs rounded-lg shadow hover:bg-lime-400">
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              <div id="tourney-teams-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+            </div>
+
+            <!-- Individual King of Court Box -->
+            <div id="tourney-indiv-setup" class="hidden bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Individual Players</div>
+                <div class="flex items-center gap-2">
+                  <span id="tourney-indiv-count" class="text-[10px] font-bold text-amber-400">8 Players</span>
+                  <button onclick="clearTourneyIndivPlayers()" class="text-[10px] font-bold text-orange-400 hover:text-orange-300">🗑️ Clear All</button>
+                </div>
+              </div>
+
+              <!-- Add Indiv Player Form -->
+              <div class="flex gap-1.5 bg-black/20 p-2.5 rounded-xl">
+                <input id="tourney-indiv-name-input" type="text" placeholder="Player Name..." onkeydown="if(event.key==='Enter') addTourneyIndivPlayer()" class="flex-1 p-2 bg-white/10 rounded-lg text-xs text-white placeholder-slate-400 border border-white/10">
+                <button onclick="addTourneyIndivPlayer()" class="px-3 py-2 bg-[#C6F24F] text-slate-950 font-black text-xs rounded-lg shadow hover:bg-lime-400">
+                  + Add
+                </button>
+              </div>
+
+              <div id="tourney-indiv-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+            </div>
+
+            <button id="tourney-start-btn" onclick="startTournament()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>🏆</span> Kickoff Tournament Round Robin
+            </button>
+          </div>
+
+          <!-- 2. Tourney Round Robin Pool View -->
+          <div id="tourney-view-roundRobin" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <span id="tourney-stage1-title" class="text-xs font-black text-amber-400 uppercase">Stage 1: Round Robin Pool</span>
+              <span class="text-[10px] text-slate-400">Top 4 advance to Championship</span>
+            </div>
+
+            <!-- Standings Table -->
+            <div class="bg-[#051c36] p-3.5 rounded-2xl border border-sky-900 space-y-2">
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                <span>Rank & Player/Team</span>
+                <div class="flex gap-4">
+                  <span>W-L</span>
+                  <span>+/-</span>
+                  <span>PTS</span>
+                </div>
+              </div>
+              <div id="tourney-standings-table" class="space-y-1.5"></div>
+            </div>
+
+            <!-- Pool Matches -->
+            <div class="space-y-2.5">
+              <div class="text-[10px] font-bold text-slate-400 uppercase">Pool Matches</div>
+              <div id="tourney-rr-matches" class="space-y-2.5"></div>
+            </div>
+
+            <button id="tourney-advance-playoffs-btn" onclick="advanceToPlayoffs()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>Advance Top 4 to Playoffs</span> ➔
+            </button>
+          </div>
+
+          <!-- 3. Tourney Playoffs View -->
+          <div id="tourney-view-playoffs" class="hidden space-y-4">
+            <div class="text-xs font-black text-amber-400 uppercase">Stage 2: Single Elimination Semi-Finals</div>
+            <div id="tourney-playoffs-matches" class="space-y-2.5"></div>
+            <button id="tourney-advance-champ-btn" onclick="advanceToChampionship()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>🥇 Advance to Championship Match</span> ➔
+            </button>
+          </div>
+
+          <!-- 4. Tourney Championship View -->
+          <div id="tourney-view-championship" class="hidden space-y-4">
+            <div class="text-xs font-black text-amber-400 uppercase">Stage 3: Medal Rounds</div>
+            <div class="space-y-3">
+              <div>
+                <div class="text-[10px] font-black text-amber-400 uppercase mb-1">🥇 Gold Medal Match</div>
+                <div id="tourney-champ-match"></div>
+              </div>
+              <div>
+                <div class="text-[10px] font-black text-orange-400 uppercase mb-1">🥉 Bronze Medal (3rd Place)</div>
+                <div id="tourney-bronze-match"></div>
+              </div>
+            </div>
+            <button id="tourney-finalize-btn" onclick="finalizeTournamentPodium()" class="w-full py-3.5 bg-[#C6F24F] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <span>🏆 Crown Tournament Champions</span>
+            </button>
+          </div>
+
+          <!-- 5. Tourney Podium View -->
+          <div id="tourney-view-podium" class="hidden space-y-4 text-center">
+            <div class="space-y-1">
+              <div class="text-4xl">🏆</div>
+              <div class="text-lg font-black text-[#C6F24F]">TOURNAMENT CHAMPIONS</div>
+              <div class="text-xs text-slate-400">Congratulations to all players at Washington Park!</div>
+            </div>
+
+            <!-- Gold Card -->
+            <div id="podium-gold-team" class="p-4 bg-amber-500/15 border-2 border-amber-400 rounded-2xl space-y-1"></div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div id="podium-silver-team" class="p-3 bg-white/10 rounded-xl space-y-1 text-left"></div>
+              <div id="podium-bronze-team" class="p-3 bg-white/10 rounded-xl space-y-1 text-left"></div>
+            </div>
+
+            <button onclick="resetTournament()" class="py-2.5 text-xs text-[#C6F24F] font-bold hover:underline">
+              Start New Tournament
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- CLUBHOUSE & PARK HOURS MODAL -->
+  <div id="clubhouse-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full rounded-3xl p-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-black">
+            🏛️
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900 leading-tight">Washington Park Clubhouse</h3>
+            <div class="text-[11px] text-slate-500">850 Burlingame Ave, Burlingame</div>
+          </div>
+        </div>
+        <button onclick="closeModal('clubhouse-modal')" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">
+          ✕
+        </button>
+      </div>
+
+      <!-- Clubhouse Hours -->
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+        <div class="flex items-center justify-between text-[11px] font-black text-slate-500 uppercase tracking-wide">
+          <span>🏛️ Clubhouse & Desk</span>
+          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-bold">Open Today</span>
+        </div>
+        <div class="space-y-1.5 text-xs">
+          <div class="flex justify-between font-bold text-slate-900">
+            <span>Monday – Thursday</span>
+            <span class="text-blue-600">8:00 AM – 7:00 PM</span>
+          </div>
+          <div class="flex justify-between text-slate-700">
+            <span>Friday</span>
+            <span>8:00 AM – 5:00 PM</span>
+          </div>
+          <div class="flex justify-between text-slate-700">
+            <span>Saturday & Sunday</span>
+            <span>9:00 AM – 4:00 PM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Courts & Lights -->
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+        <div class="text-[11px] font-black text-slate-500 uppercase tracking-wide">
+          💡 Courts & Lights Schedule
+        </div>
+        <div class="space-y-1.5 text-xs text-slate-700">
+          <div class="flex justify-between font-bold text-slate-900">
+            <span>Park & Courts Open</span>
+            <span class="text-emerald-600">6:00 AM – 10:00 PM</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Court Lights</span>
+            <span>Dusk – 10:00 PM (Auto off)</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Court 1 Drop-In</span>
+            <span>8:00 AM – 10:00 PM Daily</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Facilities & Amenities -->
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+        <div class="text-[11px] font-black text-slate-500 uppercase tracking-wide">
+          📍 Facilities & Amenities
+        </div>
+        <div class="space-y-1 text-[11px] text-slate-600">
+          <div>🚻 <strong>Restrooms:</strong> Inside Clubhouse & next to Court 1</div>
+          <div>💧 <strong>Water Station:</strong> Front of Clubhouse</div>
+          <div>🚗 <strong>Parking:</strong> Free park lot on Burlingame Ave</div>
+          <div>📞 <strong>Parks & Rec:</strong> (650) 558-7300 · parksrec@burlingame.org</div>
+        </div>
+      </div>
+
+      <a href="https://maps.apple.com/?daddr=850+Burlingame+Ave,+Burlingame,+CA+94010" target="_blank" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+        <span>Get Directions in Maps</span> ➔
+      </a>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+  <script>
+    let modalCourts = 4;
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function openPickleMatchModal() {
+      openModal('picklematch-modal');
+      renderPickleMatch();
+    }
+
+    function selectModalPill(type, val) {
+      modalCourts = val;
+      const btns = document.querySelectorAll('#modal-courts-pills button');
+      btns.forEach(b => {
+        if (b.innerText == val) {
+          b.className = 'flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold';
+        } else {
+          b.className = 'flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold';
+        }
+      });
+    }
+
+    let selectedAvatar = '🎾';
+    function setAvatar(emoji) {
+      selectedAvatar = emoji;
+      showToast(`Selected avatar ${emoji}`);
+    }
+
+    function submitModalActivity() {
+      const queue = parseInt(document.getElementById('modal-queue-input').value) || 0;
+      const rawName = document.getElementById('modal-name-input').value || state.currentUser.name || 'Player';
+      const cleanName = moderateText(rawName);
+
+      state.courtsInUse = modalCourts;
+      state.inQueue = queue;
+      state.lastReportDate = new Date();
+      state.currentUser.name = cleanName;
+
+      // Add to prior updates
+      state.priorUpdates.unshift({
+        courts: state.courtsInUse,
+        queue: state.inQueue,
+        walkOn: getWalkOnCourtsAvailable(),
+        time: new Date()
+      });
+
+      // 4-Hour Points Gating
+      const points = getPointsStatus();
+      if (points.eligible) {
+        state.lastPointsAwardedDate = new Date();
+        state.currentUser.monthlyPoints += 10;
+        state.currentUser.allTimePoints += 10;
+        state.currentUser.monthlyReports += 1;
+        state.currentUser.allTimeReports += 1;
+        showToast('⚡️ Activity posted! (+10 pts awarded)');
+      } else {
+        showToast('⚡️ Activity posted!');
+      }
+
+      saveState();
+      render();
+      closeModal('activity-modal');
+    }
+
+    function saveProfile() {
+      const rawName = document.getElementById('profile-name-input').value || 'Player (You)';
+      const rawSnack = document.getElementById('profile-snack-input').value || 'Cold Coconut Water & RXBar';
+
+      const cleanName = moderateText(rawName.trim().substring(0, 25));
+      const cleanSnack = moderateText(rawSnack.trim().substring(0, 45));
+
+      state.currentUser.name = cleanName || 'Player (You)';
+      state.currentUser.snack = cleanSnack || 'Cold Coconut Water & RXBar';
+      state.currentUser.avatar = selectedAvatar;
+
+      if (state.users[0]) {
+        state.users[0].name = state.currentUser.name;
+        state.users[0].snack = state.currentUser.snack;
+        state.users[0].avatar = state.currentUser.avatar;
+      }
+
+      saveState();
+      render();
+      closeModal('profile-modal');
+      showToast(`Profile updated as ${state.currentUser.name}!`);
+    }
+
+    function submitFeedbackModal() {
+      const text = document.getElementById('feedback-textarea').value;
+      if (!text || !text.trim()) {
+        showToast('Please enter some feedback first.');
+        return;
+      }
+      showToast('⚡️ Thank you! Feedback recorded.');
+      document.getElementById('feedback-textarea').value = '';
+      closeModal('feedback-modal');
+    }
+  </script>
+</body>
+</html>

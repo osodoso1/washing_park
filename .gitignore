@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode / Build Artifacts
+build/
+build-device/
+exports/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+xcuserdata/
+
+# Cloudflare / Wrangler
+.wrangler/
+node_modules/

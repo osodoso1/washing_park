@@ -1,0 +1,779 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00A6C8CAB9CEC3D0A5671CB2 /* PodiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF12DA09980C205D92842B5 /* PodiumView.swift */; };
+		09A309829C539209FB66D61A /* MainDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37540AE1C72C29DADBAFEFA9 /* MainDashboardView.swift */; };
+		0D8CBDF3D4C97062448EC837 /* ClubhouseHoursSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4A48043177C5847549E5C9 /* ClubhouseHoursSheet.swift */; };
+		1107E42FD395F00B239B7C9B /* PickleQueSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */; };
+		1997E6DABBA96D0BC4B19E5B /* MonthScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAE8D2FD8C7B4C4FD8C85898 /* MonthScheduleView.swift */; };
+		1C4062D67FAC5EFE15A6FACA /* PickleParkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019638A1CF7B87E4DDEDCCAD /* PickleParkApp.swift */; };
+		2704C29DA70CD1A98EC7BCCA /* WalkOnStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9435B0696F1CAC6D7FB34291 /* WalkOnStatus.swift */; };
+		2BA7A4B8DF6474552026DB19 /* TournamentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59337F9E18C952589F767348 /* TournamentListView.swift */; };
+		2DDC957BC9664683E04E52CF /* LostAndFoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5592A39A77D1F6EB46B42F7D /* LostAndFoundManager.swift */; };
+		3120CA3876F847CADF861CEA /* StatusHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7A2FDFFEAF7660068E0410 /* StatusHeroCard.swift */; };
+		31A552510A62BDEE810E99AD /* DUPRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DB1C861878C2FBA159FC43 /* DUPRService.swift */; };
+		33F48CCD39CF2703D4C93064 /* SubmissionRateLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB3998A5A285D8772F86D7AD /* SubmissionRateLimiter.swift */; };
+		38D8A37045F3C1723EDA81AE /* TournamentEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51119B4D641A37E02DAAE139 /* TournamentEngine.swift */; };
+		424FFEA7716AFA7CF2FB45BD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78CCCAA9697BEA3545A63B0D /* Assets.xcassets */; };
+		46D5ACD08DC705EB241FDC45 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B343AC6AFD41E53643B7624F /* RootTabView.swift */; };
+		4B93989A89611E624907AB53 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EFDAAD3FA5BFDC83790C010 /* UserProfileView.swift */; };
+		549833832A894BE039F09D08 /* CourtCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7E2DDACED47F60D1DB6030 /* CourtCardView.swift */; };
+		5739365EEADC6F38B5BB54E7 /* WebTracScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D8571C858FEF15DB39D59F /* WebTracScraper.swift */; };
+		67DC090638C94D04794726EC /* BracketTreeCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE235D7DC6BCF4857FBDD66 /* BracketTreeCanvas.swift */; };
+		6978704A9A57251BC4025137 /* TournamentBracketEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12410EB419C0F6ABAA109BE3 /* TournamentBracketEngine.swift */; };
+		6979969312280DA150CF43FD /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5A4DEE7EB59159A3E44837 /* CloudKitManager.swift */; };
+		71CB1F59B0CF246EB56D86A4 /* ReservationWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DAEDA3C4CEB73FFB9C081C /* ReservationWebView.swift */; };
+		7272477F93EC67A89663E320 /* MatchRotationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E865308F77C33D79B83E0AC /* MatchRotationEngine.swift */; };
+		73083E371406372A7B005940 /* LeagueEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78B560E0770891703AFDB24 /* LeagueEngine.swift */; };
+		7549D3F37C6A4710DBF171F3 /* PickleBracketApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C65657FCDB1CFAAF43762FD2 /* PickleBracketApp.swift */; };
+		7C29360C534108F51220F63F /* LeagueDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBBCD5C98ADCC48F174FC09 /* LeagueDashboardView.swift */; };
+		7E0872FFAE12D2A33A061B59 /* TodayScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11114E370146EFE5B2BF69F /* TodayScheduleView.swift */; };
+		803C9818291F54ED5F7F237B /* WalkOnCourtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D275283E6A3A6CF2995CDCE /* WalkOnCourtCard.swift */; };
+		8224234C9842BF41040BC5FF /* PickleMatchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B316A11A499D7B92B6BAE5 /* PickleMatchSheet.swift */; };
+		8962217FD5B8824EEE21599C /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55146E9E89E9414CFFDD6901 /* WeatherService.swift */; };
+		8B99411848F81A73705996A6 /* TournamentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EBE0245A2794E1E29A35EC /* TournamentDetailView.swift */; };
+		8DD0CC908CF53730519F352F /* MatchScoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFC2F7EBFFB3590B212A2C2 /* MatchScoreSheet.swift */; };
+		9695C9D6415729F10530F811 /* CreateTournamentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EED3D3ECB33390B6E29633 /* CreateTournamentView.swift */; };
+		A2097E99846CE3CAAADC489B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6A7F2EB9C05D3D916F6A71B /* Assets.xcassets */; };
+		A4AC05198C0109BB0459D46E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B45E06CC2E7BA0520A1AB5 /* Theme.swift */; };
+		AB961AFE05A6691E9F72D34E /* DevFeedbackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B49DB62DECA6A9C752DD93 /* DevFeedbackSheet.swift */; };
+		AF71110FA4422EA7829BE7CC /* CourtUsageAnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5E918A95F31E7FE2710629 /* CourtUsageAnalyticsService.swift */; };
+		BD3F88DC96E1E60393A9226A /* CourtScheduleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA6FE873EBECD8EC9268E18 /* CourtScheduleStore.swift */; };
+		BFC5364B93836A3AA37631C3 /* QueueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C61A2E772E420D0C8203570 /* QueueStatus.swift */; };
+		C9B94031861168FCB594AB66 /* WalkOnCourtManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED379945DC38733725D2715B /* WalkOnCourtManager.swift */; };
+		CB2169CAEE53B2F27ED3D972 /* LeaderboardEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7421357B10351DEEE70D31A /* LeaderboardEntry.swift */; };
+		D15A52082314DE07982E6685 /* PickleMatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA6EFD7A61B73B0C9903AD1 /* PickleMatchModels.swift */; };
+		D2A097C268225F959FCAE739 /* Court.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879EE3B45865058ABEC0A527 /* Court.swift */; };
+		DA185F1DCE1ED3EA001CD32A /* BurlingameCalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473BF67D5DCDFC142BEFE236 /* BurlingameCalendarService.swift */; };
+		DC5212132B19EF539B46341D /* LeaderboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B9DF1CF1708EB606B777FD /* LeaderboardManager.swift */; };
+		DCAD6DE24CC52CCE95E585F5 /* SevenDayScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C679CE1DFDF6349C7F6059 /* SevenDayScheduleView.swift */; };
+		E2588D8594D4139C73D0DA85 /* PickleQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B6027AEB3D78F02EDAC490B /* PickleQueueManager.swift */; };
+		E757509D13E5DB63610E74A0 /* LeaderboardCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1545383C9763E6609D98895 /* LeaderboardCard.swift */; };
+		EC1D4BD4340B7E75C9DE1EA4 /* CreateLeagueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9A121ED67B9A79B72AFDCB /* CreateLeagueView.swift */; };
+		EF6B22874E3397E05E42261A /* BracketModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D3FF68B3D86A733687FDB04 /* BracketModels.swift */; };
+		F65C5438D09FAAC6FC89D8A8 /* BracketTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDF3A109DD0DBF02AF0763C /* BracketTheme.swift */; };
+		F71134045A1C5E640ACD2544 /* ContentModerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490935499D7591F44ED52F4A /* ContentModerator.swift */; };
+		F77C0305E2BCD964400BDCCF /* LostAndFoundSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9132E10754031511E98BBA63 /* LostAndFoundSheet.swift */; };
+		FA5B64E7B2606E1349A244B0 /* CommunityCloudService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77D3FDE89702A2F99B99BA33 /* CommunityCloudService.swift */; };
+		FF374973798C32A0EBE75E1C /* ReservationSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33D81A527AAA909DD5A31DF3 /* ReservationSlot.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		019638A1CF7B87E4DDEDCCAD /* PickleParkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleParkApp.swift; sourceTree = "<group>"; };
+		0BF12DA09980C205D92842B5 /* PodiumView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodiumView.swift; sourceTree = "<group>"; };
+		0DBC02584FC13A5BDD105A22 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		12410EB419C0F6ABAA109BE3 /* TournamentBracketEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentBracketEngine.swift; sourceTree = "<group>"; };
+		14EED3D3ECB33390B6E29633 /* CreateTournamentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateTournamentView.swift; sourceTree = "<group>"; };
+		25B45E06CC2E7BA0520A1AB5 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		2D3FF68B3D86A733687FDB04 /* BracketModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketModels.swift; sourceTree = "<group>"; };
+		30B316A11A499D7B92B6BAE5 /* PickleMatchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleMatchSheet.swift; sourceTree = "<group>"; };
+		33D81A527AAA909DD5A31DF3 /* ReservationSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationSlot.swift; sourceTree = "<group>"; };
+		37540AE1C72C29DADBAFEFA9 /* MainDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDashboardView.swift; sourceTree = "<group>"; };
+		3BE235D7DC6BCF4857FBDD66 /* BracketTreeCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketTreeCanvas.swift; sourceTree = "<group>"; };
+		3D7A2FDFFEAF7660068E0410 /* StatusHeroCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusHeroCard.swift; sourceTree = "<group>"; };
+		473BF67D5DCDFC142BEFE236 /* BurlingameCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BurlingameCalendarService.swift; sourceTree = "<group>"; };
+		490935499D7591F44ED52F4A /* ContentModerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentModerator.swift; sourceTree = "<group>"; };
+		4C5A4DEE7EB59159A3E44837 /* CloudKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitManager.swift; sourceTree = "<group>"; };
+		51119B4D641A37E02DAAE139 /* TournamentEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentEngine.swift; sourceTree = "<group>"; };
+		55146E9E89E9414CFFDD6901 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
+		5592A39A77D1F6EB46B42F7D /* LostAndFoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LostAndFoundManager.swift; sourceTree = "<group>"; };
+		59337F9E18C952589F767348 /* TournamentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentListView.swift; sourceTree = "<group>"; };
+		5DDF3A109DD0DBF02AF0763C /* BracketTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketTheme.swift; sourceTree = "<group>"; };
+		5FA6FE873EBECD8EC9268E18 /* CourtScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtScheduleStore.swift; sourceTree = "<group>"; };
+		63B49DB62DECA6A9C752DD93 /* DevFeedbackSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevFeedbackSheet.swift; sourceTree = "<group>"; };
+		64EBE0245A2794E1E29A35EC /* TournamentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TournamentDetailView.swift; sourceTree = "<group>"; };
+		6EBBCD5C98ADCC48F174FC09 /* LeagueDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueDashboardView.swift; sourceTree = "<group>"; };
+		71E4B792111F375BB1C6B0D6 /* PicklePark.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PicklePark.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77D3FDE89702A2F99B99BA33 /* CommunityCloudService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityCloudService.swift; sourceTree = "<group>"; };
+		78CCCAA9697BEA3545A63B0D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7B6027AEB3D78F02EDAC490B /* PickleQueueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleQueueManager.swift; sourceTree = "<group>"; };
+		7C61A2E772E420D0C8203570 /* QueueStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueStatus.swift; sourceTree = "<group>"; };
+		7D4A48043177C5847549E5C9 /* ClubhouseHoursSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClubhouseHoursSheet.swift; sourceTree = "<group>"; };
+		879EE3B45865058ABEC0A527 /* Court.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Court.swift; sourceTree = "<group>"; };
+		89EA2560A4AE4C26F0B3A524 /* PicklePark.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PicklePark.entitlements; sourceTree = "<group>"; };
+		8D275283E6A3A6CF2995CDCE /* WalkOnCourtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnCourtCard.swift; sourceTree = "<group>"; };
+		8E865308F77C33D79B83E0AC /* MatchRotationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchRotationEngine.swift; sourceTree = "<group>"; };
+		8EFDAAD3FA5BFDC83790C010 /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileView.swift; sourceTree = "<group>"; };
+		8F7E2DDACED47F60D1DB6030 /* CourtCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtCardView.swift; sourceTree = "<group>"; };
+		9132E10754031511E98BBA63 /* LostAndFoundSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LostAndFoundSheet.swift; sourceTree = "<group>"; };
+		9435B0696F1CAC6D7FB34291 /* WalkOnStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnStatus.swift; sourceTree = "<group>"; };
+		A8DAEDA3C4CEB73FFB9C081C /* ReservationWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationWebView.swift; sourceTree = "<group>"; };
+		B343AC6AFD41E53643B7624F /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleQueSection.swift; sourceTree = "<group>"; };
+		B7421357B10351DEEE70D31A /* LeaderboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardEntry.swift; sourceTree = "<group>"; };
+		BC5045ED297D7DA3A96C0585 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BDFC2F7EBFFB3590B212A2C2 /* MatchScoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchScoreSheet.swift; sourceTree = "<group>"; };
+		C11114E370146EFE5B2BF69F /* TodayScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayScheduleView.swift; sourceTree = "<group>"; };
+		C65657FCDB1CFAAF43762FD2 /* PickleBracketApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleBracketApp.swift; sourceTree = "<group>"; };
+		C8C679CE1DFDF6349C7F6059 /* SevenDayScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevenDayScheduleView.swift; sourceTree = "<group>"; };
+		C9B9DF1CF1708EB606B777FD /* LeaderboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardManager.swift; sourceTree = "<group>"; };
+		CA9A121ED67B9A79B72AFDCB /* CreateLeagueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateLeagueView.swift; sourceTree = "<group>"; };
+		CAE8D2FD8C7B4C4FD8C85898 /* MonthScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthScheduleView.swift; sourceTree = "<group>"; };
+		CB5E918A95F31E7FE2710629 /* CourtUsageAnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtUsageAnalyticsService.swift; sourceTree = "<group>"; };
+		D3DB1C861878C2FBA159FC43 /* DUPRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DUPRService.swift; sourceTree = "<group>"; };
+		D6A7F2EB9C05D3D916F6A71B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D78B560E0770891703AFDB24 /* LeagueEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueEngine.swift; sourceTree = "<group>"; };
+		DAA6EFD7A61B73B0C9903AD1 /* PickleMatchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleMatchModels.swift; sourceTree = "<group>"; };
+		DE8A8701AE48AFAC813FCBCD /* PickleBracket.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PickleBracket.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2D8571C858FEF15DB39D59F /* WebTracScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebTracScraper.swift; sourceTree = "<group>"; };
+		ED379945DC38733725D2715B /* WalkOnCourtManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnCourtManager.swift; sourceTree = "<group>"; };
+		F1545383C9763E6609D98895 /* LeaderboardCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardCard.swift; sourceTree = "<group>"; };
+		FB3998A5A285D8772F86D7AD /* SubmissionRateLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmissionRateLimiter.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		16514250ED6D7BFFCCF6A358 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				78CCCAA9697BEA3545A63B0D /* Assets.xcassets */,
+				0DBC02584FC13A5BDD105A22 /* Info.plist */,
+				89EA2560A4AE4C26F0B3A524 /* PicklePark.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		1A5BB56A7DCB7EE7F7B3E921 /* Tournament */ = {
+			isa = PBXGroup;
+			children = (
+				14EED3D3ECB33390B6E29633 /* CreateTournamentView.swift */,
+				0BF12DA09980C205D92842B5 /* PodiumView.swift */,
+				64EBE0245A2794E1E29A35EC /* TournamentDetailView.swift */,
+				59337F9E18C952589F767348 /* TournamentListView.swift */,
+			);
+			path = Tournament;
+			sourceTree = "<group>";
+		};
+		335433F49EAE7ED8608E9B69 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DE8A8701AE48AFAC813FCBCD /* PickleBracket.app */,
+				71E4B792111F375BB1C6B0D6 /* PicklePark.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3C2A1E4EDB6721B2D2A5C498 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D6A7F2EB9C05D3D916F6A71B /* Assets.xcassets */,
+				BC5045ED297D7DA3A96C0585 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5598FBA0A2192CFC02E177B0 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D3DB1C861878C2FBA159FC43 /* DUPRService.swift */,
+				D78B560E0770891703AFDB24 /* LeagueEngine.swift */,
+				12410EB419C0F6ABAA109BE3 /* TournamentBracketEngine.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		599738EAC553595629F54C8D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				473BF67D5DCDFC142BEFE236 /* BurlingameCalendarService.swift */,
+				4C5A4DEE7EB59159A3E44837 /* CloudKitManager.swift */,
+				77D3FDE89702A2F99B99BA33 /* CommunityCloudService.swift */,
+				490935499D7591F44ED52F4A /* ContentModerator.swift */,
+				5FA6FE873EBECD8EC9268E18 /* CourtScheduleStore.swift */,
+				CB5E918A95F31E7FE2710629 /* CourtUsageAnalyticsService.swift */,
+				C9B9DF1CF1708EB606B777FD /* LeaderboardManager.swift */,
+				5592A39A77D1F6EB46B42F7D /* LostAndFoundManager.swift */,
+				8E865308F77C33D79B83E0AC /* MatchRotationEngine.swift */,
+				7B6027AEB3D78F02EDAC490B /* PickleQueueManager.swift */,
+				FB3998A5A285D8772F86D7AD /* SubmissionRateLimiter.swift */,
+				51119B4D641A37E02DAAE139 /* TournamentEngine.swift */,
+				ED379945DC38733725D2715B /* WalkOnCourtManager.swift */,
+				55146E9E89E9414CFFDD6901 /* WeatherService.swift */,
+				E2D8571C858FEF15DB39D59F /* WebTracScraper.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		724FF9FFF658461B07960195 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C65657FCDB1CFAAF43762FD2 /* PickleBracketApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		77BE3F56A2F3DBA7045E8AA3 = {
+			isa = PBXGroup;
+			children = (
+				D5A5CB5758B41841621BCE78 /* PickleBracket */,
+				A892549178FDAD93E5C7BAB2 /* PicklePark */,
+				335433F49EAE7ED8608E9B69 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7BA6A589AC041F67FEC8CC1C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				37540AE1C72C29DADBAFEFA9 /* MainDashboardView.swift */,
+				CAE8D2FD8C7B4C4FD8C85898 /* MonthScheduleView.swift */,
+				A8DAEDA3C4CEB73FFB9C081C /* ReservationWebView.swift */,
+				C8C679CE1DFDF6349C7F6059 /* SevenDayScheduleView.swift */,
+				C11114E370146EFE5B2BF69F /* TodayScheduleView.swift */,
+				C38A271AE18CC2D2035F7E5A /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		9C76A4684985B81A5621876C /* Bracket */ = {
+			isa = PBXGroup;
+			children = (
+				3BE235D7DC6BCF4857FBDD66 /* BracketTreeCanvas.swift */,
+				BDFC2F7EBFFB3590B212A2C2 /* MatchScoreSheet.swift */,
+			);
+			path = Bracket;
+			sourceTree = "<group>";
+		};
+		9D910584A5F50793C5342F41 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B343AC6AFD41E53643B7624F /* RootTabView.swift */,
+				9C76A4684985B81A5621876C /* Bracket */,
+				E43469668E1D5D965D14CA09 /* League */,
+				D48F33C8146C02727F68B9CD /* Profile */,
+				1A5BB56A7DCB7EE7F7B3E921 /* Tournament */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A27D3E30B5AB20D908D8E363 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				2D3FF68B3D86A733687FDB04 /* BracketModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A892549178FDAD93E5C7BAB2 /* PicklePark */ = {
+			isa = PBXGroup;
+			children = (
+				B0ED40E615756CA1629A5355 /* App */,
+				DBC98FD0D0C06C130D081D59 /* Models */,
+				16514250ED6D7BFFCCF6A358 /* Resources */,
+				599738EAC553595629F54C8D /* Services */,
+				7BA6A589AC041F67FEC8CC1C /* Views */,
+			);
+			path = PicklePark;
+			sourceTree = "<group>";
+		};
+		B0ED40E615756CA1629A5355 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				019638A1CF7B87E4DDEDCCAD /* PickleParkApp.swift */,
+				25B45E06CC2E7BA0520A1AB5 /* Theme.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C38A271AE18CC2D2035F7E5A /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				7D4A48043177C5847549E5C9 /* ClubhouseHoursSheet.swift */,
+				8F7E2DDACED47F60D1DB6030 /* CourtCardView.swift */,
+				63B49DB62DECA6A9C752DD93 /* DevFeedbackSheet.swift */,
+				F1545383C9763E6609D98895 /* LeaderboardCard.swift */,
+				9132E10754031511E98BBA63 /* LostAndFoundSheet.swift */,
+				30B316A11A499D7B92B6BAE5 /* PickleMatchSheet.swift */,
+				B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */,
+				3D7A2FDFFEAF7660068E0410 /* StatusHeroCard.swift */,
+				8D275283E6A3A6CF2995CDCE /* WalkOnCourtCard.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		D48F33C8146C02727F68B9CD /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				8EFDAAD3FA5BFDC83790C010 /* UserProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		D5A5CB5758B41841621BCE78 /* PickleBracket */ = {
+			isa = PBXGroup;
+			children = (
+				724FF9FFF658461B07960195 /* App */,
+				A27D3E30B5AB20D908D8E363 /* Models */,
+				3C2A1E4EDB6721B2D2A5C498 /* Resources */,
+				5598FBA0A2192CFC02E177B0 /* Services */,
+				D67FB57F4690234D3A09BA56 /* Theme */,
+				9D910584A5F50793C5342F41 /* Views */,
+			);
+			path = PickleBracket;
+			sourceTree = "<group>";
+		};
+		D67FB57F4690234D3A09BA56 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				5DDF3A109DD0DBF02AF0763C /* BracketTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		DBC98FD0D0C06C130D081D59 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				879EE3B45865058ABEC0A527 /* Court.swift */,
+				B7421357B10351DEEE70D31A /* LeaderboardEntry.swift */,
+				DAA6EFD7A61B73B0C9903AD1 /* PickleMatchModels.swift */,
+				7C61A2E772E420D0C8203570 /* QueueStatus.swift */,
+				33D81A527AAA909DD5A31DF3 /* ReservationSlot.swift */,
+				9435B0696F1CAC6D7FB34291 /* WalkOnStatus.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E43469668E1D5D965D14CA09 /* League */ = {
+			isa = PBXGroup;
+			children = (
+				CA9A121ED67B9A79B72AFDCB /* CreateLeagueView.swift */,
+				6EBBCD5C98ADCC48F174FC09 /* LeagueDashboardView.swift */,
+			);
+			path = League;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		103D72B01904B30212B9B96E /* PickleBracket */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51CAA0FC4470C0E183EECC0C /* Build configuration list for PBXNativeTarget "PickleBracket" */;
+			buildPhases = (
+				579375070537950812189FA1 /* Sources */,
+				1032A0CAAB81E773759CB5DC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PickleBracket;
+			packageProductDependencies = (
+			);
+			productName = PickleBracket;
+			productReference = DE8A8701AE48AFAC813FCBCD /* PickleBracket.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B768D0FB2A28637CC30D4BDB /* PicklePark */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C47767988304C3CF7EF676DA /* Build configuration list for PBXNativeTarget "PicklePark" */;
+			buildPhases = (
+				62980A304BD0D8C7244A43B3 /* Sources */,
+				6F01D5D377AF3432F68CB3D0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PicklePark;
+			packageProductDependencies = (
+			);
+			productName = PicklePark;
+			productReference = 71E4B792111F375BB1C6B0D6 /* PicklePark.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CCB801B2C60060D015CB500C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					103D72B01904B30212B9B96E = {
+						DevelopmentTeam = 5Q77AM8FH4;
+						ProvisioningStyle = Automatic;
+					};
+					B768D0FB2A28637CC30D4BDB = {
+						DevelopmentTeam = 5Q77AM8FH4;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 6054990C1BA85E2D8DE25D5F /* Build configuration list for PBXProject "PicklePark" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 77BE3F56A2F3DBA7045E8AA3;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 335433F49EAE7ED8608E9B69 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B768D0FB2A28637CC30D4BDB /* PicklePark */,
+				103D72B01904B30212B9B96E /* PickleBracket */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1032A0CAAB81E773759CB5DC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2097E99846CE3CAAADC489B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6F01D5D377AF3432F68CB3D0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				424FFEA7716AFA7CF2FB45BD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		579375070537950812189FA1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF6B22874E3397E05E42261A /* BracketModels.swift in Sources */,
+				F65C5438D09FAAC6FC89D8A8 /* BracketTheme.swift in Sources */,
+				67DC090638C94D04794726EC /* BracketTreeCanvas.swift in Sources */,
+				EC1D4BD4340B7E75C9DE1EA4 /* CreateLeagueView.swift in Sources */,
+				9695C9D6415729F10530F811 /* CreateTournamentView.swift in Sources */,
+				31A552510A62BDEE810E99AD /* DUPRService.swift in Sources */,
+				7C29360C534108F51220F63F /* LeagueDashboardView.swift in Sources */,
+				73083E371406372A7B005940 /* LeagueEngine.swift in Sources */,
+				8DD0CC908CF53730519F352F /* MatchScoreSheet.swift in Sources */,
+				7549D3F37C6A4710DBF171F3 /* PickleBracketApp.swift in Sources */,
+				00A6C8CAB9CEC3D0A5671CB2 /* PodiumView.swift in Sources */,
+				46D5ACD08DC705EB241FDC45 /* RootTabView.swift in Sources */,
+				6978704A9A57251BC4025137 /* TournamentBracketEngine.swift in Sources */,
+				8B99411848F81A73705996A6 /* TournamentDetailView.swift in Sources */,
+				2BA7A4B8DF6474552026DB19 /* TournamentListView.swift in Sources */,
+				4B93989A89611E624907AB53 /* UserProfileView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		62980A304BD0D8C7244A43B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA185F1DCE1ED3EA001CD32A /* BurlingameCalendarService.swift in Sources */,
+				6979969312280DA150CF43FD /* CloudKitManager.swift in Sources */,
+				0D8CBDF3D4C97062448EC837 /* ClubhouseHoursSheet.swift in Sources */,
+				FA5B64E7B2606E1349A244B0 /* CommunityCloudService.swift in Sources */,
+				F71134045A1C5E640ACD2544 /* ContentModerator.swift in Sources */,
+				D2A097C268225F959FCAE739 /* Court.swift in Sources */,
+				549833832A894BE039F09D08 /* CourtCardView.swift in Sources */,
+				BD3F88DC96E1E60393A9226A /* CourtScheduleStore.swift in Sources */,
+				AF71110FA4422EA7829BE7CC /* CourtUsageAnalyticsService.swift in Sources */,
+				AB961AFE05A6691E9F72D34E /* DevFeedbackSheet.swift in Sources */,
+				E757509D13E5DB63610E74A0 /* LeaderboardCard.swift in Sources */,
+				CB2169CAEE53B2F27ED3D972 /* LeaderboardEntry.swift in Sources */,
+				DC5212132B19EF539B46341D /* LeaderboardManager.swift in Sources */,
+				2DDC957BC9664683E04E52CF /* LostAndFoundManager.swift in Sources */,
+				F77C0305E2BCD964400BDCCF /* LostAndFoundSheet.swift in Sources */,
+				09A309829C539209FB66D61A /* MainDashboardView.swift in Sources */,
+				7272477F93EC67A89663E320 /* MatchRotationEngine.swift in Sources */,
+				1997E6DABBA96D0BC4B19E5B /* MonthScheduleView.swift in Sources */,
+				D15A52082314DE07982E6685 /* PickleMatchModels.swift in Sources */,
+				8224234C9842BF41040BC5FF /* PickleMatchSheet.swift in Sources */,
+				1C4062D67FAC5EFE15A6FACA /* PickleParkApp.swift in Sources */,
+				1107E42FD395F00B239B7C9B /* PickleQueSection.swift in Sources */,
+				E2588D8594D4139C73D0DA85 /* PickleQueueManager.swift in Sources */,
+				BFC5364B93836A3AA37631C3 /* QueueStatus.swift in Sources */,
+				FF374973798C32A0EBE75E1C /* ReservationSlot.swift in Sources */,
+				71CB1F59B0CF246EB56D86A4 /* ReservationWebView.swift in Sources */,
+				DCAD6DE24CC52CCE95E585F5 /* SevenDayScheduleView.swift in Sources */,
+				3120CA3876F847CADF861CEA /* StatusHeroCard.swift in Sources */,
+				33F48CCD39CF2703D4C93064 /* SubmissionRateLimiter.swift in Sources */,
+				A4AC05198C0109BB0459D46E /* Theme.swift in Sources */,
+				7E0872FFAE12D2A33A061B59 /* TodayScheduleView.swift in Sources */,
+				38D8A37045F3C1723EDA81AE /* TournamentEngine.swift in Sources */,
+				803C9818291F54ED5F7F237B /* WalkOnCourtCard.swift in Sources */,
+				C9B94031861168FCB594AB66 /* WalkOnCourtManager.swift in Sources */,
+				2704C29DA70CD1A98EC7BCCA /* WalkOnStatus.swift in Sources */,
+				8962217FD5B8824EEE21599C /* WeatherService.swift in Sources */,
+				5739365EEADC6F38B5BB54E7 /* WebTracScraper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		13A666DCE0760DB08C2BB4C5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		28C1F9C16F3CF0F946BCE510 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 11;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PicklePark/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.washingpark;
+				PRODUCT_NAME = PicklePark;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		82AA0FB2D55CFE66B28182ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PickleBracket/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.picklebracket;
+				PRODUCT_NAME = PickleBracket;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8742AD14450DDAC57ED50105 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		CF6DC1F216703A938668EF8B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PickleBracket/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.picklebracket;
+				PRODUCT_NAME = PickleBracket;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D2EA45E0FBDB2FFC2EC9E220 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 11;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PicklePark/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.washingpark;
+				PRODUCT_NAME = PicklePark;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		51CAA0FC4470C0E183EECC0C /* Build configuration list for PBXNativeTarget "PickleBracket" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				82AA0FB2D55CFE66B28182ED /* Debug */,
+				CF6DC1F216703A938668EF8B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6054990C1BA85E2D8DE25D5F /* Build configuration list for PBXProject "PicklePark" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				13A666DCE0760DB08C2BB4C5 /* Debug */,
+				8742AD14450DDAC57ED50105 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C47767988304C3CF7EF676DA /* Build configuration list for PBXNativeTarget "PicklePark" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D2EA45E0FBDB2FFC2EC9E220 /* Debug */,
+				28C1F9C16F3CF0F946BCE510 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CCB801B2C60060D015CB500C /* Project object */;
+}
