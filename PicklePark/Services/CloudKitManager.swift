@@ -23,8 +23,11 @@ public final class CloudKitManager: ObservableObject {
     @Published public var cloudStatusMessage: String? = nil
     @Published public var communityFeedbackList: [CommunityFeedbackItem] = []
     
+    private let leaderboardEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_leaderboard_v1"
+    private let feedbackEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_feedback_v1"
+    
     public init() {
-        self.container = CKContainer.default()
+        self.container = CKContainer(identifier: "iCloud.com.dominicsoriano.washingpark")
         self.publicDB = container.publicCloudDatabase
         
         Task {
@@ -70,13 +73,16 @@ public final class CloudKitManager: ObservableObject {
         record["court3State"] = c3State as NSString
         record["timestamp"] = Date() as NSDate
         
-        publicDB.save(record) { [weak self] savedRecord, error in
-            if error == nil {
+        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        modifyOp.savePolicy = .allKeys
+        modifyOp.modifyRecordsResultBlock = { [weak self] result in
+            if case .success = result {
                 DispatchQueue.main.async {
                     self?.cloudStatusMessage = "☁️ Synced to Apple CloudKit!"
                 }
             }
         }
+        publicDB.add(modifyOp)
     }
     
     public func fetchLatestCourtActivity() async {
@@ -96,13 +102,15 @@ public final class CloudKitManager: ObservableObject {
         let qManager = PickleQueueManager.shared
         let walkOn = WalkOnCourtManager.shared
         
-        if timestamp > qManager.queueStatus.pickleQueReportDate {
+        if qManager.queueStatus.pickleQueReportDate.timeIntervalSince1970 < 1000 ||
+            timestamp > qManager.queueStatus.pickleQueReportDate {
             if let courts = record["courtsInUse"] as? Int { qManager.queueStatus.courtsInUse = courts }
             if let extra = record["extraCourts"] as? Int { qManager.queueStatus.extraCourts = extra }
             if let queue = record["inQueue"] as? Int { qManager.queueStatus.inQueue = queue }
             if let author = record["authorName"] as? String { qManager.queueStatus.lastAuthor = author }
             qManager.queueStatus.pickleQueReportDate = timestamp
             qManager.queueStatus.lastAppSyncDate = Date()
+            qManager.saveLocalState()
         }
         
         // Check if the cloud record's timestamp is expired (from a prior day or past 11 PM)
@@ -110,7 +118,8 @@ public final class CloudKitManager: ObservableObject {
             walkOn.status.court2State = .free
             walkOn.status.court3State = .free
             walkOn.save()
-        } else if timestamp >= walkOn.status.lastReportDate {
+        } else if walkOn.status.lastReportDate.timeIntervalSince1970 < 1000 ||
+                    timestamp >= walkOn.status.lastReportDate {
             // Cloud record is from today and not expired
             if let c2Str = record["court2State"] as? String, let c2 = CourtSideOccupancy(rawValue: c2Str) {
                 walkOn.status.court2State = c2
@@ -152,10 +161,45 @@ public final class CloudKitManager: ObservableObject {
         record["avatarEmoji"] = user.avatarEmoji as NSString
         record["lastUpdated"] = Date() as NSDate
         
-        publicDB.save(record) { _, _ in }
+        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        modifyOp.savePolicy = .allKeys
+        publicDB.add(modifyOp)
+        
+        // Also push to Cloudflare Worker KV so leaderboard syncs across all devices
+        if let url = URL(string: leaderboardEndpointURL),
+           let data = try? JSONEncoder().encode([user]) {
+            Task {
+                var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = data
+                if let (respData, resp) = try? await URLSession.shared.data(for: req),
+                   let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+                   let remoteUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: respData) {
+                    await MainActor.run {
+                        LeaderboardManager.shared.mergeCloudUsers(remoteUsers)
+                    }
+                }
+            }
+        }
     }
     
     public func fetchLeaderboardFromCloud() async {
+        // 1. Fetch from Cloudflare Worker KV
+        if let url = URL(string: leaderboardEndpointURL) {
+            var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+            req.httpMethod = "GET"
+            if let (data, resp) = try? await URLSession.shared.data(for: req),
+               let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+               let workerUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: data),
+               !workerUsers.isEmpty {
+                await MainActor.run {
+                    LeaderboardManager.shared.mergeCloudUsers(workerUsers)
+                }
+            }
+        }
+        
+        // 2. Fetch from CloudKit
         let query = CKQuery(recordType: "LeaderboardUserRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "monthlyPoints", ascending: false)]
         
@@ -219,62 +263,85 @@ public final class CloudKitManager: ObservableObject {
         record["timestamp"] = Date() as NSDate
         record["appVersion"] = "1.0.0" as NSString
         
-        do {
-            _ = try await publicDB.save(record)
-            let newItem = CommunityFeedbackItem(
-                id: recordID.recordName,
-                authorName: cleanAuthor,
-                topic: topic,
-                message: cleanMessage,
-                timestamp: Date()
-            )
-            await MainActor.run {
-                self.communityFeedbackList.insert(newItem, at: 0)
+        let newItem = CommunityFeedbackItem(
+            id: recordID.recordName,
+            authorName: cleanAuthor,
+            topic: topic,
+            message: cleanMessage,
+            timestamp: Date()
+        )
+        
+        // Push to Cloudflare Worker KV
+        if let url = URL(string: feedbackEndpointURL) {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            if let data = try? encoder.encode([newItem]) {
+                var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = data
+                _ = try? await URLSession.shared.data(for: req)
             }
-            return true
-        } catch {
-            let newItem = CommunityFeedbackItem(
-                id: UUID().uuidString,
-                authorName: cleanAuthor,
-                topic: topic,
-                message: cleanMessage,
-                timestamp: Date()
-            )
-            await MainActor.run {
-                self.communityFeedbackList.insert(newItem, at: 0)
-            }
-            return true
         }
+        
+        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        modifyOp.savePolicy = .allKeys
+        publicDB.add(modifyOp)
+        
+        await MainActor.run {
+            self.communityFeedbackList.insert(newItem, at: 0)
+        }
+        return true
     }
     
     public func fetchCommunityFeedback() async {
+        var mergedById: [String: CommunityFeedbackItem] = [:]
+        
+        // 1. Pull from Cloudflare Worker KV
+        if let url = URL(string: feedbackEndpointURL) {
+            var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+            req.httpMethod = "GET"
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            if let (data, resp) = try? await URLSession.shared.data(for: req),
+               let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+               let workerItems = try? decoder.decode([CommunityFeedbackItem].self, from: data) {
+                for item in workerItems {
+                    mergedById[item.id] = item
+                }
+            }
+        }
+        
+        // 2. Pull from CloudKit
         let query = CKQuery(recordType: "DevFeedbackRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
         
         do {
             let (matchResults, _) = try await publicDB.records(matching: query)
-            var items: [CommunityFeedbackItem] = []
-            
             for (_, result) in matchResults {
                 if case .success(let record) = result {
                     if let message = record["message"] as? String,
                        let author = record["authorName"] as? String {
                         let topic = record["topic"] as? String ?? "General"
                         let timestamp = record["timestamp"] as? Date ?? Date()
-                        items.append(CommunityFeedbackItem(
+                        let item = CommunityFeedbackItem(
                             id: record.recordID.recordName,
                             authorName: author,
                             topic: topic,
                             message: message,
                             timestamp: timestamp
-                        ))
+                        )
+                        mergedById[item.id] = item
                     }
                 }
             }
-            
-            await MainActor.run {
-                self.communityFeedbackList = items
-            }
         } catch {}
+        
+        let sorted = mergedById.values.sorted { $0.timestamp > $1.timestamp }
+        if !sorted.isEmpty {
+            await MainActor.run {
+                self.communityFeedbackList = sorted
+            }
+        }
     }
 }

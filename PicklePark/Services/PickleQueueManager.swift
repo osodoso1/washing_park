@@ -5,7 +5,7 @@ import SwiftUI
 public final class PickleQueueManager: ObservableObject {
     public static let shared = PickleQueueManager()
     
-    private let queueStorageKey = "pickleque_live_status_v8"
+    private let queueStorageKey = "pickleque_live_status_v9"
     
     @Published public var queueStatus: QueueStatus
     
@@ -20,18 +20,22 @@ public final class PickleQueueManager: ObservableObject {
                 courtsInUse: 4,
                 extraCourts: 0,
                 inQueue: 0,
-                lastAuthor: "Dominic",
-                pickleQueReportDate: Date(),
+                lastAuthor: "Community",
+                pickleQueReportDate: Date(timeIntervalSince1970: 0),
                 lastAppSyncDate: Date(),
                 priorUpdates: []
             )
         }
     }
     
-    private func save() {
+    public func saveLocalState() {
         if let encoded = try? JSONEncoder().encode(queueStatus) {
             UserDefaults.standard.set(encoded, forKey: queueStorageKey)
         }
+    }
+    
+    private func save() {
+        saveLocalState()
     }
     
     public func submitActivity(courts: Int, extra: Int, queue: Int, author: String? = nil, extraNotes: String? = nil) {

@@ -331,7 +331,8 @@ public struct PickleQueSection: View {
         let activePoint = hourlyPoints.first(where: { $0.hour == inspectedHour }) ?? hourlyPoints.first(where: { $0.hour == currentHour24 }) ?? hourlyPoints[3]
         let maxGraphWait = max(25, hourlyPoints.map(\.usualWaitMinutes).max() ?? 25)
         
-        let latestRealReportDate: Date? = analyticsService.telemetryLogs.first?.timestamp ?? queueManager.queueStatus.priorUpdates.first?.timestamp
+        let liveReportDate: Date? = queueManager.queueStatus.pickleQueReportDate.timeIntervalSince1970 > 1000 ? queueManager.queueStatus.pickleQueReportDate : nil
+        let latestRealReportDate: Date? = [analyticsService.telemetryLogs.first?.timestamp, liveReportDate, queueManager.queueStatus.priorUpdates.first?.timestamp].compactMap { $0 }.max()
         let secondsSinceLastReport: TimeInterval? = latestRealReportDate.map { Date().timeIntervalSince($0) }
         let isStaleOverFourHours: Bool = {
             guard let elapsed = secondsSinceLastReport else { return true }

@@ -55,6 +55,7 @@ public struct LostAndFoundItem: Identifiable, Codable, Equatable {
     public var status: LostItemStatus
     public var lostDate: Date
     public var foundDate: Date?
+    public var updatedAt: Date?
     public var reporterName: String
     public var foundByName: String?
     public var imageBase64: String?
@@ -71,6 +72,7 @@ public struct LostAndFoundItem: Identifiable, Codable, Equatable {
         status: LostItemStatus = .lost,
         lostDate: Date = Date(),
         foundDate: Date? = nil,
+        updatedAt: Date? = Date(),
         reporterName: String = "Local Player",
         foundByName: String? = nil,
         imageBase64: String? = nil,
@@ -86,6 +88,7 @@ public struct LostAndFoundItem: Identifiable, Codable, Equatable {
         self.status = status
         self.lostDate = lostDate
         self.foundDate = foundDate
+        self.updatedAt = updatedAt
         self.reporterName = reporterName
         self.foundByName = foundByName
         self.imageBase64 = imageBase64
@@ -275,9 +278,9 @@ public final class LostAndFoundManager: ObservableObject {
     private let ownerUnlockedKey = "washington_park_lost_and_found_owner_v1"
     private let ownerPasscode = "osodoso"
     
-    private let cloudEndpointURL = "https://kvdb.io/4yHj935398713589/wp_lost_and_found_v1"
+    private let cloudEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_lost_and_found_v1"
     private var publicDB: CKDatabase {
-        CKContainer.default().publicCloudDatabase
+        CKContainer(identifier: "iCloud.com.dominicsoriano.washingpark").publicCloudDatabase
     }
     
     private init() {
@@ -404,7 +407,7 @@ public final class LostAndFoundManager: ObservableObject {
         
         pushItemToCloudKit(newItem)
         Task {
-            await pushAllToCommunityCloud()
+            await upsertItemToCommunityCloud(newItem)
         }
         
         HapticFeedback.success()
@@ -426,12 +429,13 @@ public final class LostAndFoundManager: ObservableObject {
             items[idx].foundDate = nil
             items[idx].foundByName = nil
         }
+        items[idx].updatedAt = Date()
         
         let updated = items[idx]
         saveLocalItems()
         pushItemToCloudKit(updated)
         Task {
-            await pushAllToCommunityCloud()
+            await upsertItemToCommunityCloud(updated)
         }
         HapticFeedback.success()
     }
@@ -443,12 +447,13 @@ public final class LostAndFoundManager: ObservableObject {
         items[idx].flagCount += 1
         items[idx].isFlagged = true
         items[idx].flagReason = reason
+        items[idx].updatedAt = Date()
         
         let updated = items[idx]
         saveLocalItems()
         pushItemToCloudKit(updated)
         Task {
-            await pushAllToCommunityCloud()
+            await upsertItemToCommunityCloud(updated)
         }
         HapticFeedback.medium()
     }
@@ -460,12 +465,13 @@ public final class LostAndFoundManager: ObservableObject {
         items[idx].isFlagged = false
         items[idx].flagReason = nil
         items[idx].flagCount = 0
+        items[idx].updatedAt = Date()
         
         let updated = items[idx]
         saveLocalItems()
         pushItemToCloudKit(updated)
         Task {
-            await pushAllToCommunityCloud()
+            await upsertItemToCommunityCloud(updated)
         }
         HapticFeedback.success()
     }
@@ -477,12 +483,13 @@ public final class LostAndFoundManager: ObservableObject {
         items[idx].title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         items[idx].descriptionText = newDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         items[idx].courtLocation = newLocation
+        items[idx].updatedAt = Date()
         
         let updated = items[idx]
         saveLocalItems()
         pushItemToCloudKit(updated)
         Task {
-            await pushAllToCommunityCloud()
+            await upsertItemToCommunityCloud(updated)
         }
         HapticFeedback.success()
     }
@@ -497,7 +504,7 @@ public final class LostAndFoundManager: ObservableObject {
         publicDB.delete(withRecordID: recordID) { _, _ in }
         
         Task {
-            await pushAllToCommunityCloud()
+            await deleteItemsFromCommunityCloud([itemId])
         }
         HapticFeedback.medium()
     }
@@ -515,7 +522,7 @@ public final class LostAndFoundManager: ObservableObject {
         }
         
         Task {
-            await pushAllToCommunityCloud()
+            await deleteItemsFromCommunityCloud(foundIds)
         }
         HapticFeedback.success()
     }
@@ -528,23 +535,24 @@ public final class LostAndFoundManager: ObservableObject {
             Task { @MainActor in self.isSyncing = false }
         }
         
-        // 1. Pull from Community Cloud REST endpoint
+        // 1. Pull from Cloudflare Worker KV endpoint (Authoritative cross-device store)
+        var syncedFromWorker = false
         if let url = URL(string: cloudEndpointURL) {
-            var request = URLRequest(url: url)
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
             request.httpMethod = "GET"
-            request.timeoutInterval = 5.0
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             if let (data, response) = try? await URLSession.shared.data(for: request),
                let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
                let remoteItems = try? decoder.decode([LostAndFoundItem].self, from: data) {
+                syncedFromWorker = true
                 await MainActor.run {
-                    self.mergeRemoteItems(remoteItems)
+                    self.applyAuthoritativeRemoteItems(remoteItems)
                 }
             }
         }
         
-        // 2. Pull from CloudKit public database
+        // 2. Pull from CloudKit public database as secondary mirror
         let query = CKQuery(recordType: "LostAndFoundRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "lostDate", ascending: false)]
         
@@ -577,6 +585,7 @@ public final class LostAndFoundManager: ObservableObject {
                             status: LostItemStatus(rawValue: statusRaw) ?? .lost,
                             lostDate: lostDate,
                             foundDate: foundDate,
+                            updatedAt: record.modificationDate ?? lostDate,
                             reporterName: reporter,
                             foundByName: foundBy,
                             imageBase64: imgBase64,
@@ -587,10 +596,30 @@ public final class LostAndFoundManager: ObservableObject {
                     )
                 }
             }
-            if !ckItems.isEmpty {
+            if !ckItems.isEmpty && !syncedFromWorker {
                 await MainActor.run {
                     self.mergeRemoteItems(ckItems)
                 }
+            }
+        }
+    }
+    
+    private func applyAuthoritativeRemoteItems(_ remoteItems: [LostAndFoundItem]) {
+        // Keep any brand-new local item created within the last 15 seconds that hasn't finished uploading yet
+        let now = Date()
+        let pendingLocal = items.filter { local in
+            now.timeIntervalSince(local.lostDate) < 15 && !remoteItems.contains(where: { $0.id == local.id })
+        }
+        var combined = remoteItems
+        for p in pendingLocal {
+            combined.append(p)
+        }
+        items = combined.sorted { $0.lostDate > $1.lostDate }
+        saveLocalItems()
+        
+        if !pendingLocal.isEmpty {
+            Task {
+                await pushAllToCommunityCloud()
             }
         }
     }
@@ -601,8 +630,9 @@ public final class LostAndFoundManager: ObservableObject {
         for item in items { map[item.id] = item }
         for remote in incoming {
             if let existing = map[remote.id] {
-                // Prefer whichever has a foundDate or higher flagCount
-                if remote.status == .found || remote.isFlagged || remote.flagCount >= existing.flagCount {
+                let remoteUpdated = remote.updatedAt ?? remote.foundDate ?? remote.lostDate
+                let existingUpdated = existing.updatedAt ?? existing.foundDate ?? existing.lostDate
+                if remoteUpdated >= existingUpdated || remote.status == .found || remote.isFlagged || remote.flagCount >= existing.flagCount {
                     map[remote.id] = remote
                 }
             } else {
@@ -613,6 +643,60 @@ public final class LostAndFoundManager: ObservableObject {
         saveLocalItems()
     }
     
+    private struct UpsertPayload: Codable {
+        let action: String
+        let item: LostAndFoundItem
+    }
+    
+    private struct DeletePayload: Codable {
+        let action: String
+        let ids: [String]
+    }
+    
+    private func upsertItemToCommunityCloud(_ item: LostAndFoundItem) async {
+        guard let url = URL(string: cloudEndpointURL) else { return }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        guard let data = try? encoder.encode(UpsertPayload(action: "upsert", item: item)) else { return }
+        
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        if let (respData, resp) = try? await URLSession.shared.data(for: request),
+           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+           let updatedItems = try? decoder.decode([LostAndFoundItem].self, from: respData) {
+            await MainActor.run {
+                self.items = updatedItems.sorted { $0.lostDate > $1.lostDate }
+                self.saveLocalItems()
+            }
+        }
+    }
+    
+    private func deleteItemsFromCommunityCloud(_ ids: [String]) async {
+        guard !ids.isEmpty, let url = URL(string: cloudEndpointURL) else { return }
+        guard let data = try? JSONEncoder().encode(DeletePayload(action: "delete", ids: ids)) else { return }
+        
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        if let (respData, resp) = try? await URLSession.shared.data(for: request),
+           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+           let updatedItems = try? decoder.decode([LostAndFoundItem].self, from: respData) {
+            await MainActor.run {
+                self.items = updatedItems.sorted { $0.lostDate > $1.lostDate }
+                self.saveLocalItems()
+            }
+        }
+    }
+    
     private func pushAllToCommunityCloud() async {
         guard let url = URL(string: cloudEndpointURL) else { return }
         let snapshot = await MainActor.run { Array(self.items.prefix(60)) }
@@ -620,41 +704,40 @@ public final class LostAndFoundManager: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
         guard let data = try? encoder.encode(snapshot) else { return }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = data
-        request.timeoutInterval = 5.0
         _ = try? await URLSession.shared.data(for: request)
     }
     
     private func pushItemToCloudKit(_ item: LostAndFoundItem) {
         let recordID = CKRecord.ID(recordName: "lostfound_\(item.id)")
-        publicDB.fetch(withRecordID: recordID) { existingRecord, _ in
-            let record = existingRecord ?? CKRecord(recordType: "LostAndFoundRecord", recordID: recordID)
-            record["itemId"] = item.id as NSString
-            record["title"] = item.title as NSString
-            record["descriptionText"] = item.descriptionText as NSString
-            record["category"] = item.category.rawValue as NSString
-            record["courtLocation"] = item.courtLocation as NSString
-            record["status"] = item.status.rawValue as NSString
-            record["lostDate"] = item.lostDate as NSDate
-            if let fd = item.foundDate {
-                record["foundDate"] = fd as NSDate
-            } else {
-                record["foundDate"] = nil
-            }
-            record["reporterName"] = item.reporterName as NSString
-            record["foundByName"] = (item.foundByName ?? "") as NSString
-            if let b64 = item.imageBase64 {
-                record["imageBase64"] = b64 as NSString
-            }
-            record["isFlagged"] = (item.isFlagged ? 1 : 0) as NSNumber
-            record["flagReason"] = (item.flagReason ?? "") as NSString
-            record["flagCount"] = item.flagCount as NSNumber
-            
-            self.publicDB.save(record) { _, _ in }
+        let record = CKRecord(recordType: "LostAndFoundRecord", recordID: recordID)
+        record["itemId"] = item.id as NSString
+        record["title"] = item.title as NSString
+        record["descriptionText"] = item.descriptionText as NSString
+        record["category"] = item.category.rawValue as NSString
+        record["courtLocation"] = item.courtLocation as NSString
+        record["status"] = item.status.rawValue as NSString
+        record["lostDate"] = item.lostDate as NSDate
+        if let fd = item.foundDate {
+            record["foundDate"] = fd as NSDate
+        } else {
+            record["foundDate"] = nil
         }
+        record["reporterName"] = item.reporterName as NSString
+        record["foundByName"] = (item.foundByName ?? "") as NSString
+        if let b64 = item.imageBase64 {
+            record["imageBase64"] = b64 as NSString
+        }
+        record["isFlagged"] = (item.isFlagged ? 1 : 0) as NSNumber
+        record["flagReason"] = (item.flagReason ?? "") as NSString
+        record["flagCount"] = item.flagCount as NSNumber
+        
+        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        modifyOp.savePolicy = .allKeys
+        publicDB.add(modifyOp)
     }
     
     // MARK: - Persistence & Image Compression Helpers

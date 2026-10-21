@@ -16,7 +16,7 @@ import os
 import urllib.request
 from datetime import datetime
 
-TELEMETRY_URL = "https://kvdb.io/4yHj935398713589/wp_city_telemetry_osodoso_v1"
+TELEMETRY_URL = "https://picklepark-sync.cf-watcher.workers.dev/wp_city_telemetry_osodoso_v1"
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "exports")
 CSV_PATH = os.path.join(OUTPUT_DIR, "WashingtonPark_City_Usage_Report.csv")
 SUMMARY_PATH = os.path.join(OUTPUT_DIR, "WashingtonPark_City_Executive_Summary.txt")

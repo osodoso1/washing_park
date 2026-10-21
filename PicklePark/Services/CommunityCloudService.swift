@@ -2,6 +2,35 @@ import Foundation
 import Combine
 import SwiftUI
 
+/// Prior update item serialized with Unix Epoch seconds for cross-platform JSON compatibility
+public struct CloudPriorUpdate: Codable {
+    public var id: String
+    public var courts: Int
+    public var extra: Int
+    public var queue: Int
+    public var authorName: String?
+    public var extraNotes: String?
+    public var timestamp: Double
+    
+    public init(
+        id: String = UUID().uuidString,
+        courts: Int,
+        extra: Int,
+        queue: Int,
+        authorName: String? = nil,
+        extraNotes: String? = nil,
+        timestamp: Double
+    ) {
+        self.id = id
+        self.courts = courts
+        self.extra = extra
+        self.queue = queue
+        self.authorName = authorName
+        self.extraNotes = extraNotes
+        self.timestamp = timestamp
+    }
+}
+
 /// Payload for live Washington Park crowdsourced activity synced across all players' devices
 public struct ParkCloudSyncPayload: Codable {
     public var courtsInUse: Int
@@ -14,6 +43,7 @@ public struct ParkCloudSyncPayload: Codable {
     // Walk-On Sides Status (Courts 2 & 3)
     public var court2State: String
     public var court3State: String
+    public var priorUpdates: [CloudPriorUpdate]?
     
     public init(
         courtsInUse: Int,
@@ -23,7 +53,8 @@ public struct ParkCloudSyncPayload: Codable {
         extraNotes: String? = nil,
         reportTimestamp: Double = Date().timeIntervalSince1970,
         court2State: String = "Free",
-        court3State: String = "Free"
+        court3State: String = "Free",
+        priorUpdates: [CloudPriorUpdate]? = nil
     ) {
         self.courtsInUse = courtsInUse
         self.extraCourts = extraCourts
@@ -33,15 +64,16 @@ public struct ParkCloudSyncPayload: Codable {
         self.reportTimestamp = reportTimestamp
         self.court2State = court2State
         self.court3State = court3State
+        self.priorUpdates = priorUpdates
     }
 }
 
 public final class CommunityCloudService: ObservableObject {
     public static let shared = CommunityCloudService()
     
-    // Shared Washington Park Community Cloud Endpoint (REST KV / Firebase / Cloudflare)
-    // Cloud storage key for Washington Park live feed
-    private let cloudEndpointURL = "https://kvdb.io/4yHj935398713589/wp_live_feed_v1"
+    // Shared Washington Park Community Cloud Endpoint (Cloudflare Workers + KV)
+    public static let baseWorkerURL = "https://picklepark-sync.cf-watcher.workers.dev"
+    private let cloudEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_live_feed_v1"
     
     @Published public var isSyncing: Bool = false
     @Published public var lastCloudSyncDate: Date? = nil
@@ -61,9 +93,8 @@ public final class CommunityCloudService: ObservableObject {
         
         await MainActor.run { self.isSyncing = true }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
         request.httpMethod = "GET"
-        request.timeoutInterval = 4.0
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -92,6 +123,17 @@ public final class CommunityCloudService: ObservableObject {
         
         let qStatus = PickleQueueManager.shared.queueStatus
         let walkOn = WalkOnCourtManager.shared.status
+        let priorCloud = qStatus.priorUpdates.prefix(2).map {
+            CloudPriorUpdate(
+                id: $0.id,
+                courts: $0.courts,
+                extra: $0.extra,
+                queue: $0.queue,
+                authorName: $0.authorName,
+                extraNotes: $0.extraNotes,
+                timestamp: $0.timestamp.timeIntervalSince1970
+            )
+        }
         
         let payload = ParkCloudSyncPayload(
             courtsInUse: qStatus.courtsInUse,
@@ -101,28 +143,37 @@ public final class CommunityCloudService: ObservableObject {
             extraNotes: qStatus.priorUpdates.first?.extraNotes,
             reportTimestamp: qStatus.pickleQueReportDate.timeIntervalSince1970,
             court2State: walkOn.court2State.rawValue,
-            court3State: walkOn.court3State.rawValue
+            court3State: walkOn.court3State.rawValue,
+            priorUpdates: priorCloud
         )
         
         guard let jsonData = try? JSONEncoder().encode(payload) else { return }
         
         Task {
-            var request = URLRequest(url: url)
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = jsonData
-            request.timeoutInterval = 4.0
             
-            _ = try? await URLSession.shared.data(for: request)
+            if let (data, response) = try? await URLSession.shared.data(for: request),
+               let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
+               let returnedPayload = try? JSONDecoder().decode(ParkCloudSyncPayload.self, from: data) {
+                await MainActor.run {
+                    self.applyCloudPayload(returnedPayload)
+                    self.lastCloudSyncDate = Date()
+                }
+            }
         }
     }
     
     private func applyCloudPayload(_ payload: ParkCloudSyncPayload) {
         let qManager = PickleQueueManager.shared
         let cloudDate = Date(timeIntervalSince1970: payload.reportTimestamp)
+        guard payload.reportTimestamp > 1000 else { return }
         
-        // Only apply if cloud update is newer than local report
-        if cloudDate > qManager.queueStatus.pickleQueReportDate {
+        // Apply whenever cloud update is newer than or equal to local report (or local is uninitialized)
+        if qManager.queueStatus.pickleQueReportDate.timeIntervalSince1970 < 1000 ||
+            cloudDate >= qManager.queueStatus.pickleQueReportDate {
             qManager.queueStatus.courtsInUse = payload.courtsInUse
             qManager.queueStatus.extraCourts = payload.extraCourts
             qManager.queueStatus.inQueue = payload.inQueue
@@ -130,7 +181,24 @@ public final class CommunityCloudService: ObservableObject {
             qManager.queueStatus.pickleQueReportDate = cloudDate
             qManager.queueStatus.lastAppSyncDate = Date()
             
+            if let cloudPriors = payload.priorUpdates, !cloudPriors.isEmpty {
+                qManager.queueStatus.priorUpdates = cloudPriors.prefix(2).map {
+                    PickleQueUpdate(
+                        id: $0.id,
+                        courts: $0.courts,
+                        extra: $0.extra,
+                        queue: $0.queue,
+                        authorName: $0.authorName,
+                        extraNotes: $0.extraNotes,
+                        timestamp: Date(timeIntervalSince1970: $0.timestamp)
+                    )
+                }
+            }
+            qManager.saveLocalState()
+            
+            let deterministicId = "cf_live_\(Int(payload.reportTimestamp))"
             CourtUsageAnalyticsService.shared.recordUsageSnapshot(
+                id: deterministicId,
                 timestamp: cloudDate,
                 courtsInUse: payload.courtsInUse,
                 peopleInQueue: payload.inQueue,
@@ -148,7 +216,8 @@ public final class CommunityCloudService: ObservableObject {
             walkOnManager.status.court2State = .free
             walkOnManager.status.court3State = .free
             walkOnManager.save()
-        } else if cloudDate >= walkOnManager.status.lastReportDate {
+        } else if walkOnManager.status.lastReportDate.timeIntervalSince1970 < 1000 ||
+                    cloudDate >= walkOnManager.status.lastReportDate {
             if let c2 = CourtSideOccupancy(rawValue: payload.court2State) {
                 walkOnManager.status.court2State = c2
             }
@@ -156,6 +225,7 @@ public final class CommunityCloudService: ObservableObject {
                 walkOnManager.status.court3State = c3
             }
             walkOnManager.status.lastReportDate = cloudDate
+            walkOnManager.status.lastReporterName = payload.lastAuthor
             walkOnManager.save()
         }
     }

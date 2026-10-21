@@ -5,7 +5,7 @@ import SwiftUI
 public final class WalkOnCourtManager: ObservableObject {
     public static let shared = WalkOnCourtManager()
     
-    private let storageKey = "walk_on_courts_sides_status_v3"
+    private let storageKey = "walk_on_courts_sides_status_v4"
     
     @Published public var status: WalkOnCourtStatus
     
@@ -13,19 +13,19 @@ public final class WalkOnCourtManager: ObservableObject {
         if let savedData = UserDefaults.standard.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode(WalkOnCourtStatus.self, from: savedData) {
             var current = decoded
-            if current.isExpiredBy11PM {
-                current = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(), lastReporterName: nil)
+            if current.lastReportDate.timeIntervalSince1970 > 1000 && current.isExpiredBy11PM {
+                current = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(timeIntervalSince1970: 0), lastReporterName: nil)
             }
             self.status = current
         } else {
-            self.status = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(), lastReporterName: nil)
+            self.status = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(timeIntervalSince1970: 0), lastReporterName: nil)
         }
         check11PMReset()
     }
     
     public func check11PMReset() {
-        if status.isExpiredBy11PM {
-            status = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(), lastReporterName: nil)
+        if status.lastReportDate.timeIntervalSince1970 > 1000 && status.isExpiredBy11PM {
+            status = WalkOnCourtStatus(court2State: .free, court3State: .free, lastReportDate: Date(timeIntervalSince1970: 0), lastReporterName: nil)
             save()
         }
     }

@@ -110,7 +110,7 @@ public final class CourtUsageAnalyticsService: ObservableObject {
     @Published public var isSyncingCloudLogs: Bool = false
     @Published public var isOwnerUnlocked: Bool = false
     
-    private let container = CKContainer.default()
+    private let container = CKContainer(identifier: "iCloud.com.dominicsoriano.washingpark")
     private var publicDB: CKDatabase { container.publicCloudDatabase }
     
     private init() {
@@ -230,12 +230,12 @@ public final class CourtUsageAnalyticsService: ObservableObject {
         if pushToCloud {
             pushTelemetryToCloudKit(entry)
             Task {
-                await syncTelemetryWithPrivateCloudEndpoint()
+                await pushSingleTelemetryAndSync(entry)
             }
         }
     }
     
-    private let privateTelemetryEndpointURL = "https://kvdb.io/4yHj935398713589/wp_city_telemetry_osodoso_v1"
+    private let privateTelemetryEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_city_telemetry_osodoso_v1"
     
     private func pushTelemetryToCloudKit(_ entry: CourtUsageTelemetryEntry) {
         let recordID = CKRecord.ID(recordName: "telemetry_\(entry.id)")
@@ -254,59 +254,44 @@ public final class CourtUsageAnalyticsService: ObservableObject {
         record["estimatedTotalPlayers"] = entry.estimatedTotalPlayers as NSNumber
         record["reporterTag"] = entry.reporterTag as NSString
         
-        publicDB.save(record) { _, _ in }
+        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        modifyOp.savePolicy = .allKeys
+        publicDB.add(modifyOp)
     }
     
-    private func syncTelemetryWithPrivateCloudEndpoint() async {
+    private func pushSingleTelemetryAndSync(_ entry: CourtUsageTelemetryEntry) async {
         guard let url = URL(string: privateTelemetryEndpointURL) else { return }
-        
-        // 1. Pull existing cloud entries first so we never overwrite other players' logs
-        var remoteLogs: [CourtUsageTelemetryEntry] = []
-        var getReq = URLRequest(url: url)
-        getReq.httpMethod = "GET"
-        getReq.timeoutInterval = 4.0
-        
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        
-        if let (data, resp) = try? await URLSession.shared.data(for: getReq),
-           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
-           let decoded = try? decoder.decode([CourtUsageTelemetryEntry].self, from: data) {
-            remoteLogs = decoded
-        }
-        
-        await MainActor.run {
-            if !remoteLogs.isEmpty {
-                self.mergeLogs(remoteLogs)
-            }
-        }
-        
-        // 2. Push merged real logs back to private endpoint for Mac script export
-        let logsToPush = await MainActor.run { Array(self.telemetryLogs.prefix(1000)) }
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        guard let jsonData = try? encoder.encode(logsToPush) else { return }
+        guard let jsonData = try? encoder.encode([entry]) else { return }
         
-        var postReq = URLRequest(url: url)
+        var postReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
         postReq.httpMethod = "POST"
         postReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
         postReq.httpBody = jsonData
-        postReq.timeoutInterval = 4.0
-        _ = try? await URLSession.shared.data(for: postReq)
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        if let (data, resp) = try? await URLSession.shared.data(for: postReq),
+           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+           let mergedRemote = try? decoder.decode([CourtUsageTelemetryEntry].self, from: data) {
+            await MainActor.run {
+                self.mergeLogs(mergedRemote)
+            }
+        }
     }
     
-    /// Pulls all real player reports from CloudKit and private cloud telemetry endpoint across all devices
+    /// Pulls all real player reports from CloudKit and Cloudflare telemetry endpoint across all devices
     public func fetchCloudTelemetryLogs() async {
         await MainActor.run { self.isSyncingCloudLogs = true }
         defer {
             Task { @MainActor in self.isSyncingCloudLogs = false }
         }
         
-        // 1. Pull from private cloud telemetry endpoint
+        // 1. Pull from Cloudflare telemetry endpoint
         if let url = URL(string: privateTelemetryEndpointURL) {
-            var getReq = URLRequest(url: url)
+            var getReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
             getReq.httpMethod = "GET"
-            getReq.timeoutInterval = 4.0
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             if let (data, resp) = try? await URLSession.shared.data(for: getReq),

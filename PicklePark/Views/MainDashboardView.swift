@@ -19,6 +19,7 @@ public struct MainDashboardView: View {
     @State private var reservationTargetUrl: String = WebTracScraper.webTracSearchURL
     @State private var navSpinDegrees: Double = 0.0
     @State private var refreshStatusToast: String? = nil
+    private let liveSyncTimer = Timer.publish(every: 18, on: .main, in: .common).autoconnect()
     
     public init() {}
     
@@ -299,6 +300,14 @@ public struct MainDashboardView: View {
                     Task {
                         await performFullSync(showToast: false)
                     }
+                }
+            }
+            .onReceive(liveSyncTimer) { _ in
+                guard scenePhase == .active else { return }
+                Task {
+                    await cloudService.pullLatestFromCloud()
+                    await lostAndFoundManager.pullLatestFromCloud()
+                    await CourtUsageAnalyticsService.shared.fetchCloudTelemetryLogs()
                 }
             }
         }
