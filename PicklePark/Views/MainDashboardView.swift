@@ -10,16 +10,18 @@ public struct MainDashboardView: View {
     @StateObject private var cloudService = CommunityCloudService.shared
     @StateObject private var cloudKitManager = CloudKitManager.shared
     @StateObject private var lostAndFoundManager = LostAndFoundManager.shared
+    @StateObject private var notificationManager = ParkNotificationManager.shared
     
     @State private var isShowingReservationWeb: Bool = false
     @State private var isShowingDevFeedback: Bool = false
     @State private var isShowingPickleMatch: Bool = false
     @State private var isShowingClubhouseHours: Bool = false
     @State private var isShowingLostAndFound: Bool = false
+    @State private var isShowingNotifications: Bool = false
     @State private var reservationTargetUrl: String = WebTracScraper.webTracSearchURL
     @State private var navSpinDegrees: Double = 0.0
     @State private var refreshStatusToast: String? = nil
-    private let liveSyncTimer = Timer.publish(every: 18, on: .main, in: .common).autoconnect()
+    private let liveSyncTimer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
     
     public init() {}
     
@@ -238,6 +240,15 @@ public struct MainDashboardView: View {
                         
                         Button(action: {
                             HapticFeedback.light()
+                            isShowingNotifications = true
+                        }) {
+                            Image(systemName: notificationManager.isMasterEnabled ? "bell.badge.fill" : "bell.slash.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(notificationManager.isMasterEnabled ? AppTheme.burlingameBlue : AppTheme.textSecondary)
+                        }
+                        
+                        Button(action: {
+                            HapticFeedback.light()
                             isShowingDevFeedback = true
                         }) {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -273,6 +284,9 @@ public struct MainDashboardView: View {
             }
             .sheet(isPresented: $isShowingDevFeedback) {
                 DevFeedbackSheet()
+            }
+            .sheet(isPresented: $isShowingNotifications) {
+                NotificationSettingsSheet()
             }
             .onAppear {
                 #if targetEnvironment(simulator)

@@ -63,26 +63,34 @@ public final class CloudKitManager: ObservableObject {
         c2State: String,
         c3State: String
     ) {
-        let record = CKRecord(recordType: "CourtActivityRecord", recordID: CKRecord.ID(recordName: "washington_park_latest_status"))
-        record["courtsInUse"] = courts as NSNumber
-        record["extraCourts"] = extra as NSNumber
-        record["inQueue"] = queue as NSNumber
-        record["authorName"] = (author ?? "Community Player") as NSString
-        record["extraNotes"] = (notes ?? "") as NSString
-        record["court2State"] = c2State as NSString
-        record["court3State"] = c3State as NSString
-        record["timestamp"] = Date() as NSDate
-        
-        let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
-        modifyOp.savePolicy = .allKeys
-        modifyOp.modifyRecordsResultBlock = { [weak self] result in
-            if case .success = result {
-                DispatchQueue.main.async {
-                    self?.cloudStatusMessage = "☁️ Synced to Apple CloudKit!"
+        let recordID = CKRecord.ID(recordName: "washington_park_latest_status")
+        Task {
+            let record: CKRecord
+            if let existing = try? await publicDB.record(for: recordID) {
+                record = existing
+            } else {
+                record = CKRecord(recordType: "CourtActivityRecord", recordID: recordID)
+            }
+            record["courtsInUse"] = courts as NSNumber
+            record["extraCourts"] = extra as NSNumber
+            record["inQueue"] = queue as NSNumber
+            record["authorName"] = (author ?? "Community Player") as NSString
+            record["extraNotes"] = (notes ?? "") as NSString
+            record["court2State"] = c2State as NSString
+            record["court3State"] = c3State as NSString
+            record["timestamp"] = Date() as NSDate
+            
+            let modifyOp = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+            modifyOp.savePolicy = .allKeys
+            modifyOp.modifyRecordsResultBlock = { [weak self] result in
+                if case .success = result {
+                    DispatchQueue.main.async {
+                        self?.cloudStatusMessage = "☁️ Synced to Apple CloudKit!"
+                    }
                 }
             }
+            self.publicDB.add(modifyOp)
         }
-        publicDB.add(modifyOp)
     }
     
     public func fetchLatestCourtActivity() async {
@@ -299,10 +307,9 @@ public final class CloudKitManager: ObservableObject {
         
         // 1. Pull from Cloudflare Worker KV
         if let url = URL(string: feedbackEndpointURL) {
-            var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+            var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 8.0)
             req.httpMethod = "GET"
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+            let decoder = JSONDecoder.pickleParkCloudDecoder
             if let (data, resp) = try? await URLSession.shared.data(for: req),
                let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
                let workerItems = try? decoder.decode([CommunityFeedbackItem].self, from: data) {

@@ -1,5 +1,5 @@
-// PicklePark Real-Time Crowdsourced Sync Worker (Cloudflare Workers + KV)
-// Powers cross-device syncing for:
+// PicklePark Real-Time Crowdsourced Sync Worker v2 (Cloudflare Workers + KV)
+// Powers atomic cross-device syncing for:
 // 1. Live Court Occupancy, Walk-On Sides & Paddle Queue Wait Times (/wp_live_feed_v1)
 // 2. Hourly Wait-Time Analytics & City Telemetry (/wp_city_telemetry_osodoso_v1)
 // 3. Washington Park Lost & Found Board (/wp_lost_and_found_v1)
@@ -23,6 +23,26 @@ function jsonResponse(data, status = 200) {
   });
 }
 
+function parseTimestampMs(val) {
+  if (typeof val === "number") {
+    // Swift reference date (seconds since 2001-01-01) vs Unix epoch seconds vs ms
+    if (val < 1200000000) {
+      return (val + 978307200) * 1000;
+    }
+    if (val < 10000000000) {
+      return val * 1000;
+    }
+    return val;
+  }
+  if (typeof val === "string") {
+    const parsed = Date.parse(val);
+    if (!Number.isNaN(parsed)) return parsed;
+    const num = Number(val);
+    if (!Number.isNaN(num)) return parseTimestampMs(num);
+  }
+  return Date.now();
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -34,10 +54,10 @@ export default {
     const kv = env.PICKLEPARK_KV;
 
     try {
-      // Health check
       if (path === "" || path === "health") {
         return jsonResponse({
           ok: true,
+          version: "2.0",
           service: "PicklePark Crowdsourced Sync Engine",
           timestamp: Date.now() / 1000,
         });
@@ -63,17 +83,18 @@ export default {
           const existingRaw = await kv.get("wp_live_feed_v1");
           let current = existingRaw ? JSON.parse(existingRaw) : null;
 
-          // Build updated priorUpdates history if this is a newer report
           let priorUpdates = Array.isArray(incoming.priorUpdates)
             ? incoming.priorUpdates
             : current && Array.isArray(current.priorUpdates)
             ? current.priorUpdates
             : [];
 
+          const incomingTs = incoming.reportTimestamp ?? Date.now() / 1000;
+
           if (
             current &&
             current.reportTimestamp &&
-            Math.abs((incoming.reportTimestamp || 0) - current.reportTimestamp) > 2
+            Math.abs(incomingTs - current.reportTimestamp) > 2
           ) {
             const prevEntry = {
               id: `prior_${Math.round(current.reportTimestamp)}`,
@@ -96,7 +117,7 @@ export default {
             inQueue: incoming.inQueue ?? 0,
             lastAuthor: incoming.lastAuthor ?? "Community Player",
             extraNotes: incoming.extraNotes ?? null,
-            reportTimestamp: incoming.reportTimestamp ?? Date.now() / 1000,
+            reportTimestamp: incomingTs,
             court2State: incoming.court2State ?? "Free",
             court3State: incoming.court3State ?? "Free",
             priorUpdates: priorUpdates.slice(0, 2),
@@ -111,6 +132,7 @@ export default {
       // 2. LOST & FOUND BOARD (/wp_lost_and_found_v1)
       // -----------------------------------------------------------------------
       if (path === "wp_lost_and_found_v1") {
+        const includeEnvelope = url.searchParams.get("envelope") === "1";
         const rawStore = await kv.get("wp_lost_and_found_store_v2");
         let store = rawStore ? JSON.parse(rawStore) : { items: [], deletedIds: [] };
         if (!Array.isArray(store.items)) store.items = [];
@@ -120,7 +142,10 @@ export default {
           const deletedSet = new Set(store.deletedIds);
           const activeItems = store.items
             .filter((item) => item && item.id && !deletedSet.has(item.id))
-            .sort((a, b) => new Date(b.lostDate).getTime() - new Date(a.lostDate).getTime());
+            .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate));
+          if (includeEnvelope) {
+            return jsonResponse({ items: activeItems, deletedIds: store.deletedIds }, 200);
+          }
           return jsonResponse(activeItems, 200);
         }
 
@@ -134,6 +159,25 @@ export default {
             }
           }
 
+          const mergeSingleItem = (incomingItem) => {
+            if (!incomingItem || !incomingItem.id || deletedSet.has(incomingItem.id)) return;
+            const existing = byId.get(incomingItem.id);
+            if (!existing) {
+              byId.set(incomingItem.id, incomingItem);
+            } else {
+              const incUpdated = incomingItem.updatedAt ? parseTimestampMs(incomingItem.updatedAt) : 0;
+              const exUpdated = existing.updatedAt ? parseTimestampMs(existing.updatedAt) : 0;
+              if (
+                incUpdated >= exUpdated ||
+                incomingItem.status === "MARKED FOUND" ||
+                incomingItem.isFlagged ||
+                (incomingItem.flagCount || 0) >= (existing.flagCount || 0)
+              ) {
+                byId.set(incomingItem.id, incomingItem);
+              }
+            }
+          };
+
           if (body && !Array.isArray(body) && body.action === "delete" && Array.isArray(body.ids)) {
             for (const delId of body.ids) {
               deletedSet.add(delId);
@@ -145,29 +189,18 @@ export default {
               deletedSet.delete(item.id);
               byId.set(item.id, item);
             }
+          } else if (body && !Array.isArray(body) && body.action === "sync" && Array.isArray(body.items)) {
+            for (const incomingItem of body.items) {
+              mergeSingleItem(incomingItem);
+            }
           } else if (Array.isArray(body)) {
             for (const incomingItem of body) {
-              if (!incomingItem || !incomingItem.id || deletedSet.has(incomingItem.id)) continue;
-              const existing = byId.get(incomingItem.id);
-              if (!existing) {
-                byId.set(incomingItem.id, incomingItem);
-              } else {
-                const incUpdated = incomingItem.updatedAt ? new Date(incomingItem.updatedAt).getTime() : 0;
-                const exUpdated = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
-                if (
-                  incUpdated >= exUpdated ||
-                  incomingItem.status === "MARKED FOUND" ||
-                  incomingItem.isFlagged ||
-                  (incomingItem.flagCount || 0) >= (existing.flagCount || 0)
-                ) {
-                  byId.set(incomingItem.id, incomingItem);
-                }
-              }
+              mergeSingleItem(incomingItem);
             }
           }
 
           const mergedItems = Array.from(byId.values())
-            .sort((a, b) => new Date(b.lostDate).getTime() - new Date(a.lostDate).getTime())
+            .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate))
             .slice(0, 80);
 
           const updatedStore = {
@@ -175,6 +208,9 @@ export default {
             deletedIds: Array.from(deletedSet).slice(-200),
           };
           await kv.put("wp_lost_and_found_store_v2", JSON.stringify(updatedStore));
+          if (includeEnvelope || (body && body.action === "sync")) {
+            return jsonResponse(updatedStore, 200);
+          }
           return jsonResponse(mergedItems, 200);
         }
       }
@@ -204,7 +240,7 @@ export default {
           }
 
           const merged = Array.from(byId.values())
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .sort((a, b) => parseTimestampMs(b.timestamp) - parseTimestampMs(a.timestamp))
             .slice(0, 1500);
 
           await kv.put("wp_city_telemetry_osodoso_v1", JSON.stringify(merged));
@@ -272,7 +308,7 @@ export default {
               if (x && x.id) byId.set(x.id, x);
             }
             items = Array.from(byId.values())
-              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+              .sort((a, b) => parseTimestampMs(b.timestamp) - parseTimestampMs(a.timestamp))
               .slice(0, 100);
           }
           await kv.put("wp_feedback_v1", JSON.stringify(items));

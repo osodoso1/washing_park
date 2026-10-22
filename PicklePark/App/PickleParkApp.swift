@@ -10,12 +10,19 @@ struct PickleParkApp: App {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        
+        _ = ParkNotificationManager.shared
     }
     
     var body: some Scene {
         WindowGroup {
             MainDashboardView()
                 .preferredColorScheme(.light)
+                .onAppear {
+                    if ParkNotificationManager.shared.isMasterEnabled {
+                        ParkNotificationManager.shared.requestAuthorizationIfNeeded()
+                    }
+                }
         }
     }
 }

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00A6C8CAB9CEC3D0A5671CB2 /* PodiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF12DA09980C205D92842B5 /* PodiumView.swift */; };
+		06510250209452517E2141E3 /* ParkNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8F345D6573694AB89705160 /* ParkNotificationManager.swift */; };
 		09A309829C539209FB66D61A /* MainDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37540AE1C72C29DADBAFEFA9 /* MainDashboardView.swift */; };
 		0D8CBDF3D4C97062448EC837 /* ClubhouseHoursSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4A48043177C5847549E5C9 /* ClubhouseHoursSheet.swift */; };
 		1107E42FD395F00B239B7C9B /* PickleQueSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */; };
@@ -28,6 +29,7 @@
 		67DC090638C94D04794726EC /* BracketTreeCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE235D7DC6BCF4857FBDD66 /* BracketTreeCanvas.swift */; };
 		6978704A9A57251BC4025137 /* TournamentBracketEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12410EB419C0F6ABAA109BE3 /* TournamentBracketEngine.swift */; };
 		6979969312280DA150CF43FD /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5A4DEE7EB59159A3E44837 /* CloudKitManager.swift */; };
+		7188EB2A328BB70DECA87B23 /* CrossDeviceSyncAndNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38C65751FA0385C32A7338B /* CrossDeviceSyncAndNotificationTests.swift */; };
 		71CB1F59B0CF246EB56D86A4 /* ReservationWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DAEDA3C4CEB73FFB9C081C /* ReservationWebView.swift */; };
 		7272477F93EC67A89663E320 /* MatchRotationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E865308F77C33D79B83E0AC /* MatchRotationEngine.swift */; };
 		73083E371406372A7B005940 /* LeagueEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78B560E0770891703AFDB24 /* LeagueEngine.swift */; };
@@ -48,6 +50,7 @@
 		BFC5364B93836A3AA37631C3 /* QueueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C61A2E772E420D0C8203570 /* QueueStatus.swift */; };
 		C9B94031861168FCB594AB66 /* WalkOnCourtManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED379945DC38733725D2715B /* WalkOnCourtManager.swift */; };
 		CB2169CAEE53B2F27ED3D972 /* LeaderboardEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7421357B10351DEEE70D31A /* LeaderboardEntry.swift */; };
+		CE21C62A91E48082E99501EA /* NotificationSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A2C9B4A01312B1F9232FF8F /* NotificationSettingsSheet.swift */; };
 		D15A52082314DE07982E6685 /* PickleMatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA6EFD7A61B73B0C9903AD1 /* PickleMatchModels.swift */; };
 		D2A097C268225F959FCAE739 /* Court.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879EE3B45865058ABEC0A527 /* Court.swift */; };
 		DA185F1DCE1ED3EA001CD32A /* BurlingameCalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473BF67D5DCDFC142BEFE236 /* BurlingameCalendarService.swift */; };
@@ -64,6 +67,16 @@
 		FF374973798C32A0EBE75E1C /* ReservationSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33D81A527AAA909DD5A31DF3 /* ReservationSlot.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		C674EDBABC24762BC1BA9E3D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CCB801B2C60060D015CB500C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B768D0FB2A28637CC30D4BDB;
+			remoteInfo = PicklePark;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		019638A1CF7B87E4DDEDCCAD /* PickleParkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleParkApp.swift; sourceTree = "<group>"; };
 		0BF12DA09980C205D92842B5 /* PodiumView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodiumView.swift; sourceTree = "<group>"; };
@@ -75,6 +88,7 @@
 		30B316A11A499D7B92B6BAE5 /* PickleMatchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleMatchSheet.swift; sourceTree = "<group>"; };
 		33D81A527AAA909DD5A31DF3 /* ReservationSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationSlot.swift; sourceTree = "<group>"; };
 		37540AE1C72C29DADBAFEFA9 /* MainDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDashboardView.swift; sourceTree = "<group>"; };
+		3A2C9B4A01312B1F9232FF8F /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
 		3BE235D7DC6BCF4857FBDD66 /* BracketTreeCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BracketTreeCanvas.swift; sourceTree = "<group>"; };
 		3D7A2FDFFEAF7660068E0410 /* StatusHeroCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusHeroCard.swift; sourceTree = "<group>"; };
 		473BF67D5DCDFC142BEFE236 /* BurlingameCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BurlingameCalendarService.swift; sourceTree = "<group>"; };
@@ -103,10 +117,12 @@
 		8F7E2DDACED47F60D1DB6030 /* CourtCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourtCardView.swift; sourceTree = "<group>"; };
 		9132E10754031511E98BBA63 /* LostAndFoundSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LostAndFoundSheet.swift; sourceTree = "<group>"; };
 		9435B0696F1CAC6D7FB34291 /* WalkOnStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnStatus.swift; sourceTree = "<group>"; };
+		A38C65751FA0385C32A7338B /* CrossDeviceSyncAndNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossDeviceSyncAndNotificationTests.swift; sourceTree = "<group>"; };
 		A8DAEDA3C4CEB73FFB9C081C /* ReservationWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationWebView.swift; sourceTree = "<group>"; };
 		B343AC6AFD41E53643B7624F /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
 		B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleQueSection.swift; sourceTree = "<group>"; };
 		B7421357B10351DEEE70D31A /* LeaderboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardEntry.swift; sourceTree = "<group>"; };
+		B9C2F4ACE489A629F1CB4F85 /* PickleParkTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PickleParkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC5045ED297D7DA3A96C0585 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BDFC2F7EBFFB3590B212A2C2 /* MatchScoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchScoreSheet.swift; sourceTree = "<group>"; };
 		C11114E370146EFE5B2BF69F /* TodayScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayScheduleView.swift; sourceTree = "<group>"; };
@@ -124,6 +140,7 @@
 		E2D8571C858FEF15DB39D59F /* WebTracScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebTracScraper.swift; sourceTree = "<group>"; };
 		ED379945DC38733725D2715B /* WalkOnCourtManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnCourtManager.swift; sourceTree = "<group>"; };
 		F1545383C9763E6609D98895 /* LeaderboardCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardCard.swift; sourceTree = "<group>"; };
+		F8F345D6573694AB89705160 /* ParkNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkNotificationManager.swift; sourceTree = "<group>"; };
 		FB3998A5A285D8772F86D7AD /* SubmissionRateLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmissionRateLimiter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -154,6 +171,7 @@
 			children = (
 				DE8A8701AE48AFAC813FCBCD /* PickleBracket.app */,
 				71E4B792111F375BB1C6B0D6 /* PicklePark.app */,
+				B9C2F4ACE489A629F1CB4F85 /* PickleParkTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -189,6 +207,7 @@
 				C9B9DF1CF1708EB606B777FD /* LeaderboardManager.swift */,
 				5592A39A77D1F6EB46B42F7D /* LostAndFoundManager.swift */,
 				8E865308F77C33D79B83E0AC /* MatchRotationEngine.swift */,
+				F8F345D6573694AB89705160 /* ParkNotificationManager.swift */,
 				7B6027AEB3D78F02EDAC490B /* PickleQueueManager.swift */,
 				FB3998A5A285D8772F86D7AD /* SubmissionRateLimiter.swift */,
 				51119B4D641A37E02DAAE139 /* TournamentEngine.swift */,
@@ -212,6 +231,7 @@
 			children = (
 				D5A5CB5758B41841621BCE78 /* PickleBracket */,
 				A892549178FDAD93E5C7BAB2 /* PicklePark */,
+				B90B7FCE9843ADAAF063F3BE /* PickleParkTests */,
 				335433F49EAE7ED8608E9B69 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -279,6 +299,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		B90B7FCE9843ADAAF063F3BE /* PickleParkTests */ = {
+			isa = PBXGroup;
+			children = (
+				A38C65751FA0385C32A7338B /* CrossDeviceSyncAndNotificationTests.swift */,
+			);
+			path = PickleParkTests;
+			sourceTree = "<group>";
+		};
 		C38A271AE18CC2D2035F7E5A /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -287,6 +315,7 @@
 				63B49DB62DECA6A9C752DD93 /* DevFeedbackSheet.swift */,
 				F1545383C9763E6609D98895 /* LeaderboardCard.swift */,
 				9132E10754031511E98BBA63 /* LostAndFoundSheet.swift */,
+				3A2C9B4A01312B1F9232FF8F /* NotificationSettingsSheet.swift */,
 				30B316A11A499D7B92B6BAE5 /* PickleMatchSheet.swift */,
 				B67918DCF669295DFC5E48F4 /* PickleQueSection.swift */,
 				3D7A2FDFFEAF7660068E0410 /* StatusHeroCard.swift */,
@@ -367,6 +396,24 @@
 			productReference = DE8A8701AE48AFAC813FCBCD /* PickleBracket.app */;
 			productType = "com.apple.product-type.application";
 		};
+		644CD6239FB9EE5B36CEEC1E /* PickleParkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DADCF09B05ED12EFE9F39DD6 /* Build configuration list for PBXNativeTarget "PickleParkTests" */;
+			buildPhases = (
+				A5D451AF5D42F1AF83C45405 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				26B97280513E011A01C52AD7 /* PBXTargetDependency */,
+			);
+			name = PickleParkTests;
+			packageProductDependencies = (
+			);
+			productName = PickleParkTests;
+			productReference = B9C2F4ACE489A629F1CB4F85 /* PickleParkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		B768D0FB2A28637CC30D4BDB /* PicklePark */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C47767988304C3CF7EF676DA /* Build configuration list for PBXNativeTarget "PicklePark" */;
@@ -398,6 +445,10 @@
 						DevelopmentTeam = 5Q77AM8FH4;
 						ProvisioningStyle = Automatic;
 					};
+					644CD6239FB9EE5B36CEEC1E = {
+						DevelopmentTeam = 5Q77AM8FH4;
+						ProvisioningStyle = Automatic;
+					};
 					B768D0FB2A28637CC30D4BDB = {
 						DevelopmentTeam = 5Q77AM8FH4;
 						ProvisioningStyle = Automatic;
@@ -419,6 +470,7 @@
 			projectRoot = "";
 			targets = (
 				B768D0FB2A28637CC30D4BDB /* PicklePark */,
+				644CD6239FB9EE5B36CEEC1E /* PickleParkTests */,
 				103D72B01904B30212B9B96E /* PickleBracket */,
 			);
 		};
@@ -489,6 +541,8 @@
 				09A309829C539209FB66D61A /* MainDashboardView.swift in Sources */,
 				7272477F93EC67A89663E320 /* MatchRotationEngine.swift in Sources */,
 				1997E6DABBA96D0BC4B19E5B /* MonthScheduleView.swift in Sources */,
+				CE21C62A91E48082E99501EA /* NotificationSettingsSheet.swift in Sources */,
+				06510250209452517E2141E3 /* ParkNotificationManager.swift in Sources */,
 				D15A52082314DE07982E6685 /* PickleMatchModels.swift in Sources */,
 				8224234C9842BF41040BC5FF /* PickleMatchSheet.swift in Sources */,
 				1C4062D67FAC5EFE15A6FACA /* PickleParkApp.swift in Sources */,
@@ -511,7 +565,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A5D451AF5D42F1AF83C45405 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7188EB2A328BB70DECA87B23 /* CrossDeviceSyncAndNotificationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		26B97280513E011A01C52AD7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B768D0FB2A28637CC30D4BDB /* PicklePark */;
+			targetProxy = C674EDBABC24762BC1BA9E3D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13A666DCE0760DB08C2BB4C5 /* Debug */ = {
@@ -589,7 +659,7 @@
 				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 5Q77AM8FH4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -604,6 +674,26 @@
 				PRODUCT_NAME = PicklePark;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		79C105A3B68E213E265D456C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.washingpark.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PicklePark.app/PicklePark";
 			};
 			name = Release;
 		};
@@ -692,6 +782,26 @@
 			};
 			name = Release;
 		};
+		96CE01AB8A4C5130D8B5E0F9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5Q77AM8FH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dominicsoriano.washingpark.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PicklePark.app/PicklePark";
+			};
+			name = Debug;
+		};
 		CF6DC1F216703A938668EF8B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -725,7 +835,7 @@
 				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 5Q77AM8FH4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -769,6 +879,15 @@
 			buildConfigurations = (
 				D2EA45E0FBDB2FFC2EC9E220 /* Debug */,
 				28C1F9C16F3CF0F946BCE510 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DADCF09B05ED12EFE9F39DD6 /* Build configuration list for PBXNativeTarget "PickleParkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				96CE01AB8A4C5130D8B5E0F9 /* Debug */,
+				79C105A3B68E213E265D456C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

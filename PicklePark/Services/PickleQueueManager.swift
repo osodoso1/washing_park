@@ -81,6 +81,9 @@ public final class PickleQueueManager: ObservableObject {
         queueStatus.lastAppSyncDate = Date()
         
         save()
+        ParkNotificationManager.shared.markLocalQueueSubmission(
+            timestamp: queueStatus.pickleQueReportDate.timeIntervalSince1970
+        )
         
         // Sync Walk-On Court Manager states with submitted extra count
         WalkOnCourtManager.shared.syncFromExtraCount(queueStatus.extraCourts, reporter: cleanedAuthor)

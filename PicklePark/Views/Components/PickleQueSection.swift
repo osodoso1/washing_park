@@ -17,6 +17,7 @@ public struct PickleQueSection: View {
     @ObservedObject var leaderboardManager = LeaderboardManager.shared
     @ObservedObject var rateLimiter = SubmissionRateLimiter.shared
     @ObservedObject var analyticsService = CourtUsageAnalyticsService.shared
+    @ObservedObject var notificationManager = ParkNotificationManager.shared
     
     @State private var selectedTab: LiveFeedTab = .ourData
     @State private var isRefreshing: Bool = false
@@ -445,6 +446,43 @@ public struct PickleQueSection: View {
                         .font(.system(size: 10.5, weight: .medium))
                         .foregroundColor(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                Divider()
+                
+                // Queue & Wait Time Alert Toggle Strip
+                HStack(spacing: 8) {
+                    Image(systemName: (notificationManager.isMasterEnabled && notificationManager.queueWaitAlertsEnabled) ? "bell.badge.fill" : "bell.slash.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor((notificationManager.isMasterEnabled && notificationManager.queueWaitAlertsEnabled) ? AppTheme.burlingameBlue : AppTheme.textSecondary)
+                    
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Queue & Wait Time Alerts")
+                            .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text("Notify me when someone updates the queue & wait times")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: Binding(
+                        get: { notificationManager.isMasterEnabled && notificationManager.queueWaitAlertsEnabled },
+                        set: { enabled in
+                            HapticFeedback.light()
+                            if enabled {
+                                notificationManager.isMasterEnabled = true
+                                notificationManager.queueWaitAlertsEnabled = true
+                                notificationManager.requestAuthorizationIfNeeded()
+                            } else {
+                                notificationManager.queueWaitAlertsEnabled = false
+                            }
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(AppTheme.pickleballGreen)
+                    .scaleEffect(0.82)
                 }
             }
             .padding(12)

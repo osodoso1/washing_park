@@ -261,22 +261,26 @@ public final class CourtUsageAnalyticsService: ObservableObject {
     
     private func pushSingleTelemetryAndSync(_ entry: CourtUsageTelemetryEntry) async {
         guard let url = URL(string: privateTelemetryEndpointURL) else { return }
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        let encoder = JSONEncoder.pickleParkCloudEncoder
         guard let jsonData = try? encoder.encode([entry]) else { return }
         
-        var postReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
-        postReq.httpMethod = "POST"
-        postReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        postReq.httpBody = jsonData
-        
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        if let (data, resp) = try? await URLSession.shared.data(for: postReq),
-           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
-           let mergedRemote = try? decoder.decode([CourtUsageTelemetryEntry].self, from: data) {
-            await MainActor.run {
-                self.mergeLogs(mergedRemote)
+        for attempt in 1...3 {
+            var postReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 12.0)
+            postReq.httpMethod = "POST"
+            postReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            postReq.httpBody = jsonData
+            
+            let decoder = JSONDecoder.pickleParkCloudDecoder
+            if let (data, resp) = try? await URLSession.shared.data(for: postReq),
+               let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+               let mergedRemote = try? decoder.decode([CourtUsageTelemetryEntry].self, from: data) {
+                await MainActor.run {
+                    self.mergeLogs(mergedRemote)
+                }
+                return
+            }
+            if attempt < 3 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 500_000_000)
             }
         }
     }
@@ -290,10 +294,9 @@ public final class CourtUsageAnalyticsService: ObservableObject {
         
         // 1. Pull from Cloudflare telemetry endpoint
         if let url = URL(string: privateTelemetryEndpointURL) {
-            var getReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+            var getReq = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
             getReq.httpMethod = "GET"
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+            let decoder = JSONDecoder.pickleParkCloudDecoder
             if let (data, resp) = try? await URLSession.shared.data(for: getReq),
                let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
                let decoded = try? decoder.decode([CourtUsageTelemetryEntry].self, from: data),

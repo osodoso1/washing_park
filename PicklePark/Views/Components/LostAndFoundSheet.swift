@@ -14,6 +14,7 @@ public enum LostFoundFilterTab: String, CaseIterable, Identifiable {
 public struct LostAndFoundSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var manager = LostAndFoundManager.shared
+    @ObservedObject private var notificationManager = ParkNotificationManager.shared
     
     @State private var selectedFilter: LostFoundFilterTab = .all
     @State private var searchText: String = ""
@@ -299,6 +300,49 @@ public struct LostAndFoundSheet: View {
                                 }
                             }
                         }
+                        
+                        // Automated Content Moderation + Lost & Found Alert Toggle
+                        HStack(spacing: 8) {
+                            Image(systemName: (notificationManager.isMasterEnabled && notificationManager.lostAndFoundAlertsEnabled) ? "bell.badge.fill" : "bell.slash.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor((notificationManager.isMasterEnabled && notificationManager.lostAndFoundAlertsEnabled) ? AppTheme.burlingameBlue : AppTheme.textSecondary)
+                            
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Lost & Found Push Alerts")
+                                    .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                                    .foregroundColor(AppTheme.textPrimary)
+                                Text("Get notified when a lost or found item is posted")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(AppTheme.textSecondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: Binding(
+                                get: { notificationManager.isMasterEnabled && notificationManager.lostAndFoundAlertsEnabled },
+                                set: { enabled in
+                                    HapticFeedback.light()
+                                    if enabled {
+                                        notificationManager.isMasterEnabled = true
+                                        notificationManager.lostAndFoundAlertsEnabled = true
+                                        notificationManager.requestAuthorizationIfNeeded()
+                                    } else {
+                                        notificationManager.lostAndFoundAlertsEnabled = false
+                                    }
+                                }
+                            ))
+                            .labelsHidden()
+                            .tint(AppTheme.pickleballGreen)
+                            .scaleEffect(0.82)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color(red: 0.88, green: 0.90, blue: 0.93), lineWidth: 1)
+                        )
                         
                         // Automated Content Moderation Notice
                         HStack(spacing: 6) {
@@ -809,6 +853,7 @@ private struct LostAndFoundItemCard: View {
 private struct PostLostFoundItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var manager = LostAndFoundManager.shared
+    @ObservedObject private var notificationManager = ParkNotificationManager.shared
     
     @State private var itemTitle: String = ""
     @State private var descriptionText: String = ""

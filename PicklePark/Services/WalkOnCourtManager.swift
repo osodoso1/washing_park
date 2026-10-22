@@ -74,6 +74,11 @@ public final class WalkOnCourtManager: ObservableObject {
         let qStatus = PickleQueueManager.shared.queueStatus
         let openExtra = status.court2State.pickleballCourtsOpen + status.court3State.pickleballCourtsOpen
         PickleQueueManager.shared.queueStatus.extraCourts = openExtra
+        PickleQueueManager.shared.queueStatus.pickleQueReportDate = Date()
+        PickleQueueManager.shared.saveLocalState()
+        ParkNotificationManager.shared.markLocalQueueSubmission(
+            timestamp: PickleQueueManager.shared.queueStatus.pickleQueReportDate.timeIntervalSince1970
+        )
         
         CloudKitManager.shared.pushCourtActivityToCloud(
             courts: qStatus.courtsInUse,
@@ -112,6 +117,11 @@ public final class WalkOnCourtManager: ObservableObject {
         let qStatus = PickleQueueManager.shared.queueStatus
         let openExtra = status.court2State.pickleballCourtsOpen + status.court3State.pickleballCourtsOpen
         PickleQueueManager.shared.queueStatus.extraCourts = openExtra
+        PickleQueueManager.shared.queueStatus.pickleQueReportDate = Date()
+        PickleQueueManager.shared.saveLocalState()
+        ParkNotificationManager.shared.markLocalQueueSubmission(
+            timestamp: PickleQueueManager.shared.queueStatus.pickleQueReportDate.timeIntervalSince1970
+        )
         
         CloudKitManager.shared.pushCourtActivityToCloud(
             courts: qStatus.courtsInUse,

@@ -93,13 +93,13 @@ public final class CommunityCloudService: ObservableObject {
         
         await MainActor.run { self.isSyncing = true }
         
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
         request.httpMethod = "GET"
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             if let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 {
-                if let payload = try? JSONDecoder().decode(ParkCloudSyncPayload.self, from: data) {
+                if let payload = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data) {
                     await MainActor.run {
                         self.applyCloudPayload(payload)
                         self.lastCloudSyncDate = Date()
@@ -150,17 +150,23 @@ public final class CommunityCloudService: ObservableObject {
         guard let jsonData = try? JSONEncoder().encode(payload) else { return }
         
         Task {
-            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = jsonData
-            
-            if let (data, response) = try? await URLSession.shared.data(for: request),
-               let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
-               let returnedPayload = try? JSONDecoder().decode(ParkCloudSyncPayload.self, from: data) {
-                await MainActor.run {
-                    self.applyCloudPayload(returnedPayload)
-                    self.lastCloudSyncDate = Date()
+            for attempt in 1...3 {
+                var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 12.0)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = jsonData
+                
+                if let (data, response) = try? await URLSession.shared.data(for: request),
+                   let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
+                   let returnedPayload = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data) {
+                    await MainActor.run {
+                        self.applyCloudPayload(returnedPayload)
+                        self.lastCloudSyncDate = Date()
+                    }
+                    return
+                }
+                if attempt < 3 {
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 500_000_000)
                 }
             }
         }
@@ -170,6 +176,9 @@ public final class CommunityCloudService: ObservableObject {
         let qManager = PickleQueueManager.shared
         let cloudDate = Date(timeIntervalSince1970: payload.reportTimestamp)
         guard payload.reportTimestamp > 1000 else { return }
+        
+        // Check if this is a brand-new remote queue update to notify the user
+        ParkNotificationManager.shared.evaluateIncomingQueuePayload(payload)
         
         // Apply whenever cloud update is newer than or equal to local report (or local is uninitialized)
         if qManager.queueStatus.pickleQueReportDate.timeIntervalSince1970 < 1000 ||

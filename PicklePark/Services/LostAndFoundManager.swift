@@ -401,14 +401,13 @@ public final class LostAndFoundManager: ObservableObject {
         items.sort { $0.lostDate > $1.lostDate }
         saveLocalItems()
         
-        // Update viewer timestamp so the person who just posted doesn't immediately badge themselves
+        // Update viewer timestamp and local submission tracker so the poster doesn't self-notify
         lastViewedTimestamp = max(lastViewedTimestamp, now.timeIntervalSince1970)
         UserDefaults.standard.set(lastViewedTimestamp, forKey: lastViewedKey)
+        ParkNotificationManager.shared.markLocalLostFoundSubmission(id: newItem.id)
         
         pushItemToCloudKit(newItem)
-        Task {
-            await upsertItemToCommunityCloud(newItem)
-        }
+        await upsertItemToCommunityCloud(newItem)
         
         HapticFeedback.success()
         return (newItem, safetyResult.isFlagged, safetyResult.reason)
@@ -529,25 +528,35 @@ public final class LostAndFoundManager: ObservableObject {
     
     // MARK: - Cloud Sync (Community Cloud + CloudKit)
     
+    private struct LostFoundSyncEnvelope: Codable {
+        let items: [LostAndFoundItem]
+        let deletedIds: [String]?
+    }
+    
     public func pullLatestFromCloud() async {
         await MainActor.run { self.isSyncing = true }
         defer {
             Task { @MainActor in self.isSyncing = false }
         }
         
-        // 1. Pull from Cloudflare Worker KV endpoint (Authoritative cross-device store)
+        // 1. Pull from Cloudflare Worker KV endpoint with deletedIds tombstone envelope
         var syncedFromWorker = false
-        if let url = URL(string: cloudEndpointURL) {
-            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        if let url = URL(string: "\(cloudEndpointURL)?envelope=1") {
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
             request.httpMethod = "GET"
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+            let decoder = JSONDecoder.pickleParkCloudDecoder
             if let (data, response) = try? await URLSession.shared.data(for: request),
-               let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
-               let remoteItems = try? decoder.decode([LostAndFoundItem].self, from: data) {
-                syncedFromWorker = true
-                await MainActor.run {
-                    self.applyAuthoritativeRemoteItems(remoteItems)
+               let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 {
+                if let envelope = try? decoder.decode(LostFoundSyncEnvelope.self, from: data) {
+                    syncedFromWorker = true
+                    await MainActor.run {
+                        self.mergeWithServerEnvelope(remoteItems: envelope.items, deletedIds: Set(envelope.deletedIds ?? []))
+                    }
+                } else if let remoteItems = try? decoder.decode([LostAndFoundItem].self, from: data) {
+                    syncedFromWorker = true
+                    await MainActor.run {
+                        self.mergeWithServerEnvelope(remoteItems: remoteItems, deletedIds: [])
+                    }
                 }
             }
         }
@@ -604,20 +613,39 @@ public final class LostAndFoundManager: ObservableObject {
         }
     }
     
-    private func applyAuthoritativeRemoteItems(_ remoteItems: [LostAndFoundItem]) {
-        // Keep any brand-new local item created within the last 15 seconds that hasn't finished uploading yet
-        let now = Date()
-        let pendingLocal = items.filter { local in
-            now.timeIntervalSince(local.lostDate) < 15 && !remoteItems.contains(where: { $0.id == local.id })
+    private func mergeWithServerEnvelope(remoteItems: [LostAndFoundItem], deletedIds: Set<String>) {
+        var map: [String: LostAndFoundItem] = [:]
+        var unsyncedLocalToPush: [LostAndFoundItem] = []
+        
+        let remoteIds = Set(remoteItems.map(\.id))
+        
+        // 1. Add all remote items that aren't deleted
+        for remote in remoteItems where !deletedIds.contains(remote.id) {
+            map[remote.id] = remote
         }
-        var combined = remoteItems
-        for p in pendingLocal {
-            combined.append(p)
+        
+        // 2. Preserve any local item that is NOT in deletedIds; if it's newer or missing on server, queue it for push
+        for local in items where !deletedIds.contains(local.id) {
+            if let existingRemote = map[local.id] {
+                let localUpdated = local.updatedAt ?? local.foundDate ?? local.lostDate
+                let remoteUpdated = existingRemote.updatedAt ?? existingRemote.foundDate ?? existingRemote.lostDate
+                if localUpdated > remoteUpdated {
+                    map[local.id] = local
+                    unsyncedLocalToPush.append(local)
+                }
+            } else if !remoteIds.contains(local.id) {
+                map[local.id] = local
+                unsyncedLocalToPush.append(local)
+            }
         }
-        items = combined.sorted { $0.lostDate > $1.lostDate }
+        
+        items = map.values.sorted { $0.lostDate > $1.lostDate }
         saveLocalItems()
         
-        if !pendingLocal.isEmpty {
+        // Evaluate for new remote Lost & Found notifications
+        ParkNotificationManager.shared.evaluateIncomingLostAndFoundItems(items)
+        
+        if !unsyncedLocalToPush.isEmpty {
             Task {
                 await pushAllToCommunityCloud()
             }
@@ -641,6 +669,7 @@ public final class LostAndFoundManager: ObservableObject {
         }
         items = map.values.sorted { $0.lostDate > $1.lostDate }
         saveLocalItems()
+        ParkNotificationManager.shared.evaluateIncomingLostAndFoundItems(items)
     }
     
     private struct UpsertPayload: Codable {
@@ -655,38 +684,41 @@ public final class LostAndFoundManager: ObservableObject {
     
     private func upsertItemToCommunityCloud(_ item: LostAndFoundItem) async {
         guard let url = URL(string: cloudEndpointURL) else { return }
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        let encoder = JSONEncoder.pickleParkCloudEncoder
         guard let data = try? encoder.encode(UpsertPayload(action: "upsert", item: item)) else { return }
         
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = data
-        
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        if let (respData, resp) = try? await URLSession.shared.data(for: request),
-           let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
-           let updatedItems = try? decoder.decode([LostAndFoundItem].self, from: respData) {
-            await MainActor.run {
-                self.items = updatedItems.sorted { $0.lostDate > $1.lostDate }
-                self.saveLocalItems()
+        for attempt in 1...3 {
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 15.0)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = data
+            
+            let decoder = JSONDecoder.pickleParkCloudDecoder
+            if let (respData, resp) = try? await URLSession.shared.data(for: request),
+               let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 {
+                if let updatedItems = try? decoder.decode([LostAndFoundItem].self, from: respData) {
+                    await MainActor.run {
+                        self.mergeWithServerEnvelope(remoteItems: updatedItems, deletedIds: [])
+                    }
+                }
+                return
+            }
+            if attempt < 3 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 600_000_000)
             }
         }
     }
     
     private func deleteItemsFromCommunityCloud(_ ids: [String]) async {
         guard !ids.isEmpty, let url = URL(string: cloudEndpointURL) else { return }
-        guard let data = try? JSONEncoder().encode(DeletePayload(action: "delete", ids: ids)) else { return }
+        guard let data = try? JSONEncoder.pickleParkCloudEncoder.encode(DeletePayload(action: "delete", ids: ids)) else { return }
         
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 12.0)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = data
         
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let decoder = JSONDecoder.pickleParkCloudDecoder
         if let (respData, resp) = try? await URLSession.shared.data(for: request),
            let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
            let updatedItems = try? decoder.decode([LostAndFoundItem].self, from: respData) {
@@ -700,11 +732,10 @@ public final class LostAndFoundManager: ObservableObject {
     private func pushAllToCommunityCloud() async {
         guard let url = URL(string: cloudEndpointURL) else { return }
         let snapshot = await MainActor.run { Array(self.items.prefix(60)) }
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        let encoder = JSONEncoder.pickleParkCloudEncoder
         guard let data = try? encoder.encode(snapshot) else { return }
         
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 15.0)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = data
