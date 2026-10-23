@@ -10,11 +10,12 @@
 
 ---
 
-## 2. Information We Collect & How It Is Used
-- **Voluntary Court & Wait-Time Reports:** When you voluntarily report court occupancy or paddle-rack queue counts, the report timestamp and court numbers are synced via Apple CloudKit (`iCloud.com.picklepark.app`) to calculate live and hourly estimated wait times for fellow players.
-- **Voluntary Lost & Found & Community Posts:** If you voluntarily post a lost or found item (including an optional photo from your camera or photo library) or a community suggestion, that post is displayed on the community board so fellow Washington Park players can view it.
-- **Weather & Air Quality:** The App fetches live weather and EPA Air Quality Index (AQI) data for Washington Park's fixed coordinates in Burlingame, CA. The App does **not** request or track your device GPS location.
-- **No Tracking or Selling of Data:** We do not collect device identifiers for advertising (IDFA), do not use third-party advertising SDKs, and never sell or rent data.
+## 2. Zero Personal Data Collection ("Data Not Collected")
+PicklePark is architected for maximum user privacy (`NSPrivacyTracking = false`, `NSPrivacyCollectedDataTypes = []`):
+- **No Accounts or Personal Identifiers:** You never provide a name, email address, phone number, Apple ID, or device identifier (`IDFA` / `IDFV`) to use the App.
+- **No Location Tracking:** The App fetches live weather and EPA Air Quality Index (AQI) data using Washington Park's fixed public coordinates in Burlingame, CA (`37.5779° N, 122.3481° W`). The App never requests or accesses your device GPS location.
+- **Anonymous Community Court & Lost-and-Found State:** Voluntary court occupancy updates and Lost & Found board items are shared anonymously as public park state. Optional Lost & Found photos are re-rendered on-device into a clean bitmap prior to upload, automatically stripping all camera EXIF and GPS metadata.
+- **No Tracking, Analytics, or Selling of Data:** We include zero third-party analytics or advertising SDKs, never track users across apps or websites, and never sell or rent data.
 
 ---
 

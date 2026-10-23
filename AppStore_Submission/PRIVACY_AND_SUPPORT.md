@@ -102,17 +102,18 @@ PicklePark includes community court status reports, a Lost & Found board, and a 
 
 ---
 
-## 4. App Store Connect Privacy Questionnaire & Age Rating
+## 4. App Store Connect Privacy Questionnaire & Age Rating ("Most Private App")
 
-### App Privacy ("Data Not Linked to You")
-When filling out the **App Privacy** section in App Store Connect:
-1. **Do you or your third-party partners collect data from this app?** $\rightarrow$ **Yes**
-2. **Data Types Collected**:
-   - **User Content → Photos or Videos** *(Optional Lost & Found item photos submitted by users; Not Linked to User; Not Used for Tracking; Used for App Functionality)*
-   - **User Content → Other User Content** *(Optional court status updates, Lost & Found descriptions, and anonymous feedback; Not Linked to User; Not Used for Tracking; Used for App Functionality)*
-3. **Do you use data for tracking purposes?** $\rightarrow$ **No**
+### App Privacy ("Data Not Collected" Badge)
+PicklePark includes an embedded Apple Privacy Manifest (`PrivacyInfo.xcprivacy`) with `NSPrivacyTracking = false` and `NSPrivacyCollectedDataTypes = []`, collects zero personal identifiers (`IDFA`/`IDFV`), requires no login, strips EXIF/GPS metadata on-device from any optional Lost & Found photo, and uses zero third-party analytics SDKs.
 
-### Age Rating Questionnaire (`4+` or `9+`)
+In **App Store Connect → App Privacy** (`https://appstoreconnect.apple.com/apps/6805610411/distribution/privacy`):
+1. Click **Get Started** (or **Edit** next to Data Types).
+2. **Do you or your third-party partners collect data from this app?** $\rightarrow$ Select **No, we do not collect data from this app**.
+3. Click **Save**, then click **Publish** in the top-right corner.
+   - *Result*: Your App Store page displays Apple's highest privacy badge: **"Data Not Collected — The developer does not collect any data from this app."**
+
+### Age Rating Questionnaire (`4+`)
 - Cartoon or Fantasy Violence: **None**
 - Realistic Violence: **None**
 - Sexual Content or Nudity: **None**

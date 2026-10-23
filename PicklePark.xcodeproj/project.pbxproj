@@ -46,6 +46,7 @@
 		A4AC05198C0109BB0459D46E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B45E06CC2E7BA0520A1AB5 /* Theme.swift */; };
 		AB961AFE05A6691E9F72D34E /* DevFeedbackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B49DB62DECA6A9C752DD93 /* DevFeedbackSheet.swift */; };
 		AF71110FA4422EA7829BE7CC /* CourtUsageAnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5E918A95F31E7FE2710629 /* CourtUsageAnalyticsService.swift */; };
+		B7910BE1A58A104074D6252D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7E342FBCCC9245B447E50CAD /* PrivacyInfo.xcprivacy */; };
 		BD3F88DC96E1E60393A9226A /* CourtScheduleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA6FE873EBECD8EC9268E18 /* CourtScheduleStore.swift */; };
 		BFC5364B93836A3AA37631C3 /* QueueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C61A2E772E420D0C8203570 /* QueueStatus.swift */; };
 		C9B94031861168FCB594AB66 /* WalkOnCourtManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED379945DC38733725D2715B /* WalkOnCourtManager.swift */; };
@@ -109,6 +110,7 @@
 		7B6027AEB3D78F02EDAC490B /* PickleQueueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickleQueueManager.swift; sourceTree = "<group>"; };
 		7C61A2E772E420D0C8203570 /* QueueStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueStatus.swift; sourceTree = "<group>"; };
 		7D4A48043177C5847549E5C9 /* ClubhouseHoursSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClubhouseHoursSheet.swift; sourceTree = "<group>"; };
+		7E342FBCCC9245B447E50CAD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		879EE3B45865058ABEC0A527 /* Court.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Court.swift; sourceTree = "<group>"; };
 		89EA2560A4AE4C26F0B3A524 /* PicklePark.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PicklePark.entitlements; sourceTree = "<group>"; };
 		8D275283E6A3A6CF2995CDCE /* WalkOnCourtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOnCourtCard.swift; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 				78CCCAA9697BEA3545A63B0D /* Assets.xcassets */,
 				0DBC02584FC13A5BDD105A22 /* Info.plist */,
 				89EA2560A4AE4C26F0B3A524 /* PicklePark.entitlements */,
+				7E342FBCCC9245B447E50CAD /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -490,6 +493,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				424FFEA7716AFA7CF2FB45BD /* Assets.xcassets in Resources */,
+				B7910BE1A58A104074D6252D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -659,7 +663,7 @@
 				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 5Q77AM8FH4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -835,7 +839,7 @@
 				CODE_SIGN_ENTITLEMENTS = PicklePark/Resources/PicklePark.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 5Q77AM8FH4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
