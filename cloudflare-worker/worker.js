@@ -1,10 +1,19 @@
-// PicklePark Real-Time Crowdsourced Sync Worker v2 (Cloudflare Workers + KV)
+// PicklePark Real-Time Crowdsourced Sync Worker v3 (Cloudflare Workers + Durable Objects + KV)
 // Powers atomic cross-device syncing for:
 // 1. Live Court Occupancy, Walk-On Sides & Paddle Queue Wait Times (/wp_live_feed_v1)
+//    Served by a Durable Object so every device reads the same state instantly and
+//    concurrent reports are applied one at a time (KV is only an eventually-consistent mirror).
 // 2. Hourly Wait-Time Analytics & City Telemetry (/wp_city_telemetry_osodoso_v1)
 // 3. Washington Park Lost & Found Board (/wp_lost_and_found_v1)
 // 4. Community Leaderboard (/wp_leaderboard_v1)
 // 5. Community Suggestions & Feedback (/wp_feedback_v1)
+
+import { DurableObject } from "cloudflare:workers";
+
+// Production feed plus an isolated feed the XCTest suite writes to
+const LIVE_FEED_KEYS = new Set(["wp_live_feed_v1", "wp_live_feed_test_v1"]);
+const LIVE_FEED_HISTORY_LIMIT = 2;
+const COURT_SIDE_STATES = ["Free", "1 Side Taken", "Both Sides Taken"];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,8 +52,197 @@ function parseTimestampMs(val) {
   return Date.now();
 }
 
+function clampInt(val, min, max, fallback) {
+  const num = Math.round(Number(val));
+  if (!Number.isFinite(num)) return fallback;
+  return Math.min(max, Math.max(min, num));
+}
+
+function cleanString(val) {
+  if (typeof val !== "string") return null;
+  const trimmed = val.trim();
+  return trimmed ? trimmed.slice(0, 200) : null;
+}
+
+function courtSideState(val, fallback) {
+  return COURT_SIDE_STATES.includes(val) ? val : fallback;
+}
+
+function courtSideOpenCount(state) {
+  if (state === "Free") return 2;
+  if (state === "1 Side Taken") return 1;
+  return 0;
+}
+
+// Resolves when a report actually happened, in server time.
+// New clients send reportAgeSeconds (measured on one device clock, so skew-free);
+// older builds send their own Unix reportTimestamp, which is capped at server "now".
+function resolveReportTimestamp(incoming, serverNowSec) {
+  const age = Number(incoming.reportAgeSeconds);
+  if (Number.isFinite(age)) {
+    return serverNowSec - Math.min(Math.max(age, 0), 86400);
+  }
+  const deviceTs = Number(incoming.reportTimestamp);
+  if (Number.isFinite(deviceTs) && deviceTs > 1000000000) {
+    return Math.min(deviceTs, serverNowSec);
+  }
+  return serverNowSec;
+}
+
+function historyEntryFromState(state) {
+  return {
+    id: `upd_${Math.round(state.reportTimestamp * 1000)}`,
+    courts: state.courtsInUse ?? 4,
+    extra: state.extraCourts ?? 0,
+    queue: state.inQueue ?? 0,
+    authorName: state.lastAuthor || "Community Player",
+    extraNotes: state.extraNotes || null,
+    timestamp: state.reportTimestamp,
+  };
+}
+
+// Applies one incoming report to the current live state.
+// A report only becomes the live state if it is at least as new as what is already live,
+// so a phone that was offline or behind can never roll everyone back to stale numbers.
+function mergeLiveReport(current, incoming, serverNowSec) {
+  const ts = resolveReportTimestamp(incoming, serverNowSec);
+  const kind = incoming.updateKind;
+  const base = current || {
+    courtsInUse: 4,
+    extraCourts: 0,
+    inQueue: 0,
+    court2State: "Free",
+    court3State: "Free",
+  };
+
+  let report;
+  if (kind === "walkOnCourt2" || kind === "walkOnCourt3") {
+    // Walk-on toggle only changes that one court; keep everything else from the live state
+    const court2State = kind === "walkOnCourt2"
+      ? courtSideState(incoming.court2State, base.court2State)
+      : courtSideState(base.court2State, "Free");
+    const court3State = kind === "walkOnCourt3"
+      ? courtSideState(incoming.court3State, base.court3State)
+      : courtSideState(base.court3State, "Free");
+    report = {
+      courtsInUse: clampInt(base.courtsInUse, 0, 4, 4),
+      extraCourts: courtSideOpenCount(court2State) + courtSideOpenCount(court3State),
+      inQueue: clampInt(base.inQueue, 0, 500, 0),
+      lastAuthor: cleanString(incoming.lastAuthor) || "Community Player",
+      extraNotes: null,
+      reportTimestamp: ts,
+      court2State,
+      court3State,
+    };
+  } else {
+    report = {
+      courtsInUse: clampInt(incoming.courtsInUse, 0, 4, 4),
+      extraCourts: clampInt(incoming.extraCourts, 0, 4, 0),
+      inQueue: clampInt(incoming.inQueue, 0, 500, 0),
+      lastAuthor: cleanString(incoming.lastAuthor) || "Community Player",
+      extraNotes: cleanString(incoming.extraNotes),
+      reportTimestamp: ts,
+      court2State: courtSideState(incoming.court2State, "Free"),
+      court3State: courtSideState(incoming.court3State, "Free"),
+    };
+  }
+
+  // History is owned by the server; client-sent history is ignored so stale phones can't re-inject old rows
+  const candidates = [historyEntryFromState(report)];
+  if (current && current.reportTimestamp) {
+    candidates.push(historyEntryFromState(current));
+  }
+  if (current && Array.isArray(current.priorUpdates)) {
+    candidates.push(...current.priorUpdates);
+  }
+  candidates.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  const history = [];
+  for (const item of candidates) {
+    if (!item || !item.timestamp) continue;
+    if (!history.some((existing) => Math.abs(existing.timestamp - item.timestamp) < 0.001)) {
+      history.push(item);
+    }
+    if (history.length >= LIVE_FEED_HISTORY_LIMIT) break;
+  }
+
+  const isNewest = !current || !current.reportTimestamp || ts >= current.reportTimestamp;
+  const liveState = isNewest ? report : current;
+  return { ...liveState, priorUpdates: history };
+}
+
+function liveFeedResponse(state, status = 200) {
+  return jsonResponse({ ...state, serverTime: Date.now() / 1000 }, status);
+}
+
+// One Durable Object instance per feed key: strongly consistent reads, serialized writes
+export class LiveFeedDO extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.state = null;
+    ctx.blockConcurrencyWhile(async () => {
+      this.state = (await ctx.storage.get("state")) || null;
+    });
+  }
+
+  async seedFromKV(kvKey) {
+    if (this.state || !this.env.PICKLEPARK_KV) return;
+    const raw = await this.env.PICKLEPARK_KV.get(kvKey);
+    if (raw && !this.state) {
+      this.state = JSON.parse(raw);
+      await this.ctx.storage.put("state", this.state);
+    }
+  }
+
+  async getState(kvKey) {
+    await this.seedFromKV(kvKey);
+    return this.state;
+  }
+
+  async submit(kvKey, incoming) {
+    await this.seedFromKV(kvKey);
+    const merged = mergeLiveReport(this.state, incoming, Date.now() / 1000);
+    this.state = merged;
+    await this.ctx.storage.put("state", merged);
+    return merged;
+  }
+}
+
+async function handleLiveFeed(request, env, ctx, feedKey) {
+  const kv = env.PICKLEPARK_KV;
+
+  if (env.LIVE_FEED) {
+    const stub = env.LIVE_FEED.get(env.LIVE_FEED.idFromName(feedKey));
+    if (request.method === "GET") {
+      const state = await stub.getState(feedKey);
+      return state ? liveFeedResponse(state) : jsonResponse(null, 404);
+    }
+    if (request.method === "POST" || request.method === "PUT") {
+      const incoming = await request.json();
+      const merged = await stub.submit(feedKey, incoming || {});
+      // Mirror to KV for backup / fallback readers without delaying the response
+      ctx.waitUntil(kv.put(feedKey, JSON.stringify(merged)));
+      return liveFeedResponse(merged);
+    }
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+
+  // Fallback when the Durable Object binding is unavailable: KV only
+  if (request.method === "GET") {
+    const raw = await kv.get(feedKey);
+    return raw ? liveFeedResponse(JSON.parse(raw)) : jsonResponse(null, 404);
+  }
+  if (request.method === "POST" || request.method === "PUT") {
+    const incoming = await request.json();
+    const existingRaw = await kv.get(feedKey);
+    const merged = mergeLiveReport(existingRaw ? JSON.parse(existingRaw) : null, incoming || {}, Date.now() / 1000);
+    await kv.put(feedKey, JSON.stringify(merged));
+    return liveFeedResponse(merged);
+  }
+  return jsonResponse({ error: "Method not allowed" }, 405);
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
@@ -57,7 +255,8 @@ export default {
       if (path === "" || path === "health") {
         return jsonResponse({
           ok: true,
-          version: "2.0",
+          version: "3.0",
+          liveFeedStore: env.LIVE_FEED ? "durable-object" : "kv",
           service: "PicklePark Crowdsourced Sync Engine",
           timestamp: Date.now() / 1000,
         });
@@ -66,66 +265,8 @@ export default {
       // -----------------------------------------------------------------------
       // 1. LIVE COURT STATUS & WAIT TIME (/wp_live_feed_v1)
       // -----------------------------------------------------------------------
-      if (path === "wp_live_feed_v1") {
-        if (request.method === "GET") {
-          const raw = await kv.get("wp_live_feed_v1");
-          if (!raw) {
-            return jsonResponse(null, 404);
-          }
-          return new Response(raw, {
-            status: 200,
-            headers: { "Content-Type": "application/json; charset=utf-8", ...CORS_HEADERS },
-          });
-        }
-
-        if (request.method === "POST" || request.method === "PUT") {
-          const incoming = await request.json();
-          const existingRaw = await kv.get("wp_live_feed_v1");
-          let current = existingRaw ? JSON.parse(existingRaw) : null;
-
-          let priorUpdates = Array.isArray(incoming.priorUpdates)
-            ? incoming.priorUpdates
-            : current && Array.isArray(current.priorUpdates)
-            ? current.priorUpdates
-            : [];
-
-          const incomingTs = incoming.reportTimestamp ?? Date.now() / 1000;
-
-          if (
-            current &&
-            current.reportTimestamp &&
-            Math.abs(incomingTs - current.reportTimestamp) > 2
-          ) {
-            const prevEntry = {
-              id: `prior_${Math.round(current.reportTimestamp)}`,
-              courts: current.courtsInUse ?? 4,
-              extra: current.extraCourts ?? 0,
-              queue: current.inQueue ?? 0,
-              authorName: current.lastAuthor || "Player",
-              extraNotes: current.extraNotes || null,
-              timestamp: current.reportTimestamp,
-            };
-            priorUpdates = [
-              prevEntry,
-              ...priorUpdates.filter((u) => Math.abs((u.timestamp || 0) - prevEntry.timestamp) > 2),
-            ].slice(0, 2);
-          }
-
-          const merged = {
-            courtsInUse: incoming.courtsInUse ?? 4,
-            extraCourts: incoming.extraCourts ?? 0,
-            inQueue: incoming.inQueue ?? 0,
-            lastAuthor: incoming.lastAuthor ?? "Community Player",
-            extraNotes: incoming.extraNotes ?? null,
-            reportTimestamp: incomingTs,
-            court2State: incoming.court2State ?? "Free",
-            court3State: incoming.court3State ?? "Free",
-            priorUpdates: priorUpdates.slice(0, 2),
-          };
-
-          await kv.put("wp_live_feed_v1", JSON.stringify(merged));
-          return jsonResponse(merged, 200);
-        }
+      if (LIVE_FEED_KEYS.has(path)) {
+        return await handleLiveFeed(request, env, ctx, path);
       }
 
       // -----------------------------------------------------------------------

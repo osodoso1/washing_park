@@ -41,54 +41,38 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
     
     // MARK: - 2. Live Cross-Device Queue & Wait Time Sync Verification
     
-    func testLiveCrossDeviceQueueAndWaitTimeSync() async throws {
-        let liveFeedURL = URL(string: "https://picklepark-sync.cf-watcher.workers.dev/wp_live_feed_v1")!
-        
-        // 1. Fetch current production state so we can restore it cleanly after the test
-        var backupData: Data? = nil
-        if let (data, resp) = try? await URLSession.shared.data(from: liveFeedURL),
-           let http = resp as? HTTPURLResponse, http.statusCode == 200 {
-            backupData = data
+    // Tests write to an isolated feed on the same Worker so real players never see test reports
+    private let testFeedPath = "wp_live_feed_test_v1"
+    private var testFeedURL: URL {
+        URL(string: "\(CommunityCloudService.baseWorkerURL)/\(testFeedPath)")!
+    }
+    
+    override func setUp() async throws {
+        await MainActor.run {
+            CommunityCloudService.shared.liveFeedPath = testFeedPath
         }
-        
-        defer {
-            if let backup = backupData {
-                let sem = DispatchSemaphore(value: 0)
-                var restoreReq = URLRequest(url: liveFeedURL)
-                restoreReq.httpMethod = "POST"
-                restoreReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                restoreReq.httpBody = backup
-                URLSession.shared.dataTask(with: restoreReq) { _, _, _ in
-                    sem.signal()
-                }.resume()
-                _ = sem.wait(timeout: .now() + 5.0)
-            }
+    }
+    
+    override func tearDown() async throws {
+        await MainActor.run {
+            CommunityCloudService.shared.liveFeedPath = CommunityCloudService.productionFeedPath
         }
-        
-        // 2. Simulate Device A broadcasting a live Queue Update (4 courts full, 8 in queue, 2 walk-on open)
-        let testTimestamp = Date().timeIntervalSince1970
-        let deviceAPayload = ParkCloudSyncPayload(
-            courtsInUse: 4,
-            extraCourts: 2,
-            inQueue: 8,
-            lastAuthor: "SyncTestDeviceA",
-            extraNotes: "E2E Cross-Device Test",
-            reportTimestamp: testTimestamp,
-            court2State: "Free",
-            court3State: "Both Sides Taken",
-            priorUpdates: []
-        )
-        
-        var postReq = URLRequest(url: liveFeedURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
+    }
+    
+    @discardableResult
+    private func postToTestFeed(_ payload: ParkCloudSyncPayload) async throws -> ParkCloudSyncPayload {
+        var postReq = URLRequest(url: testFeedURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
         postReq.httpMethod = "POST"
         postReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        postReq.httpBody = try JSONEncoder.pickleParkCloudEncoder.encode(deviceAPayload)
+        postReq.httpBody = try JSONEncoder.pickleParkCloudEncoder.encode(payload)
         
-        let (_, postResp) = try await URLSession.shared.data(for: postReq)
+        let (data, postResp) = try await URLSession.shared.data(for: postReq)
         let postHttp = try XCTUnwrap(postResp as? HTTPURLResponse)
-        XCTAssertEqual(postHttp.statusCode, 200, "Device A POST to /wp_live_feed_v1 must return 200 OK")
-        
-        // 3. Simulate Device B starting from a fresh install state (epoch 0) and pulling from cloud
+        XCTAssertEqual(postHttp.statusCode, 200, "POST to /\(testFeedPath) must return 200 OK")
+        return try JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data)
+    }
+    
+    private func resetLocalStateToFreshInstall() async {
         await MainActor.run {
             PickleQueueManager.shared.queueStatus = QueueStatus(
                 courtsInUse: 4,
@@ -100,16 +84,42 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
                 priorUpdates: []
             )
         }
+    }
+    
+    func testLiveCrossDeviceQueueAndWaitTimeSync() async throws {
+        // 1. Simulate Device A broadcasting a live Queue Update (4 courts full, 8 in queue, 2 walk-on open)
+        let testTimestamp = Date().timeIntervalSince1970
+        try await postToTestFeed(ParkCloudSyncPayload(
+            courtsInUse: 4,
+            extraCourts: 2,
+            inQueue: 8,
+            lastAuthor: "SyncTestDeviceA",
+            extraNotes: "E2E Cross-Device Test",
+            reportTimestamp: testTimestamp,
+            court2State: "Free",
+            court3State: "Both Sides Taken",
+            reportAgeSeconds: 0,
+            updateKind: LiveFeedUpdateKind.full.rawValue
+        ))
         
+        // 2. Simulate Device B starting from a fresh install state (epoch 0) and pulling from cloud
+        await resetLocalStateToFreshInstall()
         await CommunityCloudService.shared.pullLatestFromCloud()
         
-        // 4. Verify Device B loaded Device A's exact crowdsourced queue & wait time state
+        // 3. Verify Device B loaded Device A's exact crowdsourced queue & wait time state
         let syncedStatus = await MainActor.run { PickleQueueManager.shared.queueStatus }
         XCTAssertEqual(syncedStatus.courtsInUse, 4)
         XCTAssertEqual(syncedStatus.inQueue, 8)
         XCTAssertEqual(syncedStatus.extraCourts, 2)
         XCTAssertEqual(syncedStatus.lastAuthor, "SyncTestDeviceA")
-        XCTAssertEqual(syncedStatus.pickleQueReportDate.timeIntervalSince1970, testTimestamp, accuracy: 1.0)
+        XCTAssertEqual(syncedStatus.pickleQueReportDate.timeIntervalSince1970, testTimestamp, accuracy: 3.0)
+        XCTAssertEqual(syncedStatus.priorUpdates.first?.queue, 8, "Past Updates must list the newest report first")
+        
+        let (lastSync, failed) = await MainActor.run {
+            (CommunityCloudService.shared.lastCloudSyncDate, CommunityCloudService.shared.lastSyncFailed)
+        }
+        XCTAssertFalse(failed)
+        XCTAssertLessThan(Date().timeIntervalSince(try XCTUnwrap(lastSync)), 5, "Live Cloud Synced must reflect a real server round trip")
         
         let syncedWaitMins = CourtUsageAnalyticsService.calculateEstimatedWaitMinutes(
             courtsInUse: syncedStatus.courtsInUse,
@@ -117,6 +127,62 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
             walkOnCourtsOpen: syncedStatus.extraCourts
         )
         XCTAssertEqual(syncedWaitMins, 8, "Device B must compute ~8 mins wait time from Device A's 8-person queue")
+    }
+    
+    func testStalePhoneCannotRollBackLiveFeed() async throws {
+        let fresh = try await postToTestFeed(ParkCloudSyncPayload(
+            courtsInUse: 4,
+            extraCourts: 0,
+            inQueue: 12,
+            lastAuthor: "FreshReporter",
+            court2State: "Both Sides Taken",
+            court3State: "Both Sides Taken",
+            reportAgeSeconds: 0,
+            updateKind: LiveFeedUpdateKind.full.rawValue
+        ))
+        
+        // A phone still holding yesterday's numbers (older build, device timestamp) posts late
+        let afterStale = try await postToTestFeed(ParkCloudSyncPayload(
+            courtsInUse: 2,
+            extraCourts: 4,
+            inQueue: 0,
+            lastAuthor: "StalePhone",
+            reportTimestamp: Date().timeIntervalSince1970 - 86400,
+            court2State: "Free",
+            court3State: "Free"
+        ))
+        XCTAssertEqual(afterStale.lastAuthor, "FreshReporter")
+        XCTAssertEqual(afterStale.inQueue, 12)
+        XCTAssertEqual(afterStale.reportTimestamp, fresh.reportTimestamp, accuracy: 0.001)
+    }
+    
+    func testWalkOnToggleKeepsLiveQueueNumbers() async throws {
+        try await postToTestFeed(ParkCloudSyncPayload(
+            courtsInUse: 4,
+            extraCourts: 0,
+            inQueue: 9,
+            lastAuthor: "QueueReporter",
+            court2State: "Both Sides Taken",
+            court3State: "Both Sides Taken",
+            reportAgeSeconds: 0,
+            updateKind: LiveFeedUpdateKind.full.rawValue
+        ))
+        
+        // Another phone flips Court 2 while its own courts/queue numbers are out of date
+        let afterToggle = try await postToTestFeed(ParkCloudSyncPayload(
+            courtsInUse: 1,
+            extraCourts: 4,
+            inQueue: 0,
+            court2State: "Free",
+            court3State: "Free",
+            reportAgeSeconds: 0,
+            updateKind: LiveFeedUpdateKind.walkOnCourt2.rawValue
+        ))
+        XCTAssertEqual(afterToggle.inQueue, 9, "Walk-on toggle must not overwrite the live queue")
+        XCTAssertEqual(afterToggle.courtsInUse, 4)
+        XCTAssertEqual(afterToggle.court2State, "Free")
+        XCTAssertEqual(afterToggle.court3State, "Both Sides Taken", "Only the toggled court changes")
+        XCTAssertEqual(afterToggle.extraCourts, 2)
     }
     
     // MARK: - 3. Live Cross-Device Lost & Found Post, Mark Found & Delete Verification

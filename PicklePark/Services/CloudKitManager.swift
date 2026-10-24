@@ -94,11 +94,18 @@ public final class CloudKitManager: ObservableObject {
     }
     
     public func fetchLatestCourtActivity() async {
+        // CommunityCloudService (Cloudflare Worker KV) is the primary cross-device source of truth.
+        // Only fall back to CloudKit if CommunityCloudService has not synced yet.
+        if CommunityCloudService.shared.lastCloudSyncDate != nil {
+            return
+        }
         let recordID = CKRecord.ID(recordName: "washington_park_latest_status")
         do {
             let record = try await publicDB.record(for: recordID)
             await MainActor.run {
-                self.applyActivityRecord(record)
+                if CommunityCloudService.shared.lastCloudSyncDate == nil {
+                    self.applyActivityRecord(record)
+                }
             }
         } catch {
             // Silently fallback to local state

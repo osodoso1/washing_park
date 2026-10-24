@@ -45,6 +45,14 @@ public struct ParkCloudSyncPayload: Codable {
     public var court3State: String
     public var priorUpdates: [CloudPriorUpdate]?
     
+    // Upload-only: seconds since the report happened on this device. The server converts it to
+    // its own clock, so phones with a wrong clock can't make a report look newer or older than it is.
+    public var reportAgeSeconds: Double?
+    // Upload-only: which fields this upload changes (LiveFeedUpdateKind raw value)
+    public var updateKind: String?
+    // Download-only: server clock when the response was produced
+    public var serverTime: Double?
+    
     public init(
         courtsInUse: Int,
         extraCourts: Int,
@@ -54,7 +62,9 @@ public struct ParkCloudSyncPayload: Codable {
         reportTimestamp: Double = Date().timeIntervalSince1970,
         court2State: String = "Free",
         court3State: String = "Free",
-        priorUpdates: [CloudPriorUpdate]? = nil
+        priorUpdates: [CloudPriorUpdate]? = nil,
+        reportAgeSeconds: Double? = nil,
+        updateKind: String? = nil
     ) {
         self.courtsInUse = courtsInUse
         self.extraCourts = extraCourts
@@ -65,19 +75,58 @@ public struct ParkCloudSyncPayload: Codable {
         self.court2State = court2State
         self.court3State = court3State
         self.priorUpdates = priorUpdates
+        self.reportAgeSeconds = reportAgeSeconds
+        self.updateKind = updateKind
     }
+}
+
+/// What a live-feed upload changes. Walk-on toggles only touch their own court on the server,
+/// so a phone that is a few seconds behind can't overwrite everyone's courts/queue numbers.
+public enum LiveFeedUpdateKind: String, Codable {
+    case full
+    case walkOnCourt2
+    case walkOnCourt3
 }
 
 public final class CommunityCloudService: ObservableObject {
     public static let shared = CommunityCloudService()
     
-    // Shared Washington Park Community Cloud Endpoint (Cloudflare Workers + KV)
-    public static let baseWorkerURL = "https://picklepark-sync.cf-watcher.workers.dev"
-    private let cloudEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_live_feed_v1"
+    // Shared Washington Park Community Cloud Endpoint (Cloudflare Workers + Durable Object)
+    public static let baseWorkerURL: String = {
+        #if DEBUG
+        // Lets Debug builds sync against a local `wrangler dev` Worker; never compiled into App Store builds
+        if let override = ProcessInfo.processInfo.environment["PICKLEPARK_WORKER_URL"], !override.isEmpty {
+            return override
+        }
+        #endif
+        return "https://picklepark-sync.cf-watcher.workers.dev"
+    }()
+    public static let productionFeedPath = "wp_live_feed_v1"
+    /// Overridable so the test suite syncs against an isolated feed instead of production
+    var liveFeedPath = CommunityCloudService.productionFeedPath
+    private var cloudEndpointURL: URL? { URL(string: "\(Self.baseWorkerURL)/\(liveFeedPath)") }
+    
+    private let pendingUploadKey = "wp_live_feed_pending_upload_v1"
+    private let lastClipboardChangeCountKey = "wp_clipboard_last_change_count_v1"
     
     @Published public var isSyncing: Bool = false
+    @Published public var isBroadcasting: Bool = false
+    /// Last time this phone actually exchanged data with the live feed server
     @Published public var lastCloudSyncDate: Date? = nil
+    /// True when the most recent attempt to reach the live feed failed (no signal / server error)
+    @Published public var lastSyncFailed: Bool = false
     @Published public var syncBannerMessage: String? = nil
+    
+    // Main-thread only. Bumped every time this phone changes the live report; a network response
+    // is only applied if no newer local change happened while it was in flight.
+    private var localChangeGeneration: Int = 0
+    private var uploadsInFlight: Int = 0
+    
+    /// A local report that hasn't reached the server yet (e.g. no signal at the park); retried on the next sync
+    private var pendingUploadKind: LiveFeedUpdateKind? {
+        get { UserDefaults.standard.string(forKey: pendingUploadKey).flatMap(LiveFeedUpdateKind.init(rawValue:)) }
+        set { UserDefaults.standard.set(newValue?.rawValue, forKey: pendingUploadKey) }
+    }
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -89,67 +138,71 @@ public final class CommunityCloudService: ObservableObject {
     
     /// Pulls latest crowdsourced court activity & walk-on status from the cloud
     public func pullLatestFromCloud() async {
-        guard let url = URL(string: cloudEndpointURL) else { return }
+        guard let url = cloudEndpointURL else { return }
+        
+        let (startGeneration, pendingKind, uploading) = await MainActor.run {
+            (self.localChangeGeneration, self.pendingUploadKind, self.uploadsInFlight > 0)
+        }
+        // Our own report is on its way up; its response carries the newest server state
+        if uploading { return }
+        if let pendingKind {
+            // Deliver the report that never made it instead of overwriting it with older cloud data
+            await uploadLocalReport(kind: pendingKind, generation: startGeneration)
+            return
+        }
         
         await MainActor.run { self.isSyncing = true }
         
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
         request.httpMethod = "GET"
         
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 {
-                if let payload = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data) {
-                    await MainActor.run {
-                        self.applyCloudPayload(payload)
-                        self.lastCloudSyncDate = Date()
-                        self.isSyncing = false
-                    }
-                    return
-                }
+        var payload: ParkCloudSyncPayload? = nil
+        var succeeded = false
+        if let (data, response) = try? await URLSession.shared.data(for: request),
+           let httpResp = response as? HTTPURLResponse {
+            if httpResp.statusCode == 200 {
+                payload = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data)
+                succeeded = payload != nil
+            } else if httpResp.statusCode == 404 {
+                // Feed is empty: nobody has reported yet
+                succeeded = true
             }
-        } catch {
-            // Silently fallback to local state if offline
         }
         
         await MainActor.run {
+            if let payload, self.localChangeGeneration == startGeneration, self.pendingUploadKind == nil {
+                self.applyCloudPayload(payload)
+            }
+            if succeeded {
+                self.lastCloudSyncDate = Date()
+            }
+            self.lastSyncFailed = !succeeded
             self.isSyncing = false
         }
     }
     
-    /// Broadcasts local court activity & walk-on update to the community cloud
-    public func broadcastToCloud() {
-        guard let url = URL(string: cloudEndpointURL) else { return }
+    /// Broadcasts this phone's latest court report to the community cloud. Call on the main thread.
+    public func broadcastToCloud(kind: LiveFeedUpdateKind = .full) {
+        localChangeGeneration += 1
+        let generation = localChangeGeneration
+        pendingUploadKind = kind
+        Task {
+            await uploadLocalReport(kind: kind, generation: generation)
+        }
+    }
+    
+    @discardableResult
+    private func uploadLocalReport(kind: LiveFeedUpdateKind, generation: Int) async -> Bool {
+        guard let url = cloudEndpointURL else { return false }
         
-        let qStatus = PickleQueueManager.shared.queueStatus
-        let walkOn = WalkOnCourtManager.shared.status
-        let priorCloud = qStatus.priorUpdates.prefix(2).map {
-            CloudPriorUpdate(
-                id: $0.id,
-                courts: $0.courts,
-                extra: $0.extra,
-                queue: $0.queue,
-                authorName: $0.authorName,
-                extraNotes: $0.extraNotes,
-                timestamp: $0.timestamp.timeIntervalSince1970
-            )
+        let payload: ParkCloudSyncPayload = await MainActor.run {
+            self.uploadsInFlight += 1
+            self.isBroadcasting = true
+            return self.makeLocalReportPayload(kind: kind)
         }
         
-        let payload = ParkCloudSyncPayload(
-            courtsInUse: qStatus.courtsInUse,
-            extraCourts: qStatus.extraCourts,
-            inQueue: qStatus.inQueue,
-            lastAuthor: qStatus.lastAuthor,
-            extraNotes: qStatus.priorUpdates.first?.extraNotes,
-            reportTimestamp: qStatus.pickleQueReportDate.timeIntervalSince1970,
-            court2State: walkOn.court2State.rawValue,
-            court3State: walkOn.court3State.rawValue,
-            priorUpdates: priorCloud
-        )
-        
-        guard let jsonData = try? JSONEncoder().encode(payload) else { return }
-        
-        Task {
+        var returnedPayload: ParkCloudSyncPayload? = nil
+        if let jsonData = try? JSONEncoder().encode(payload) {
             for attempt in 1...3 {
                 var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 12.0)
                 request.httpMethod = "POST"
@@ -158,40 +211,75 @@ public final class CommunityCloudService: ObservableObject {
                 
                 if let (data, response) = try? await URLSession.shared.data(for: request),
                    let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
-                   let returnedPayload = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data) {
-                    await MainActor.run {
-                        self.applyCloudPayload(returnedPayload)
-                        self.lastCloudSyncDate = Date()
-                    }
-                    return
+                   let decoded = try? JSONDecoder.pickleParkCloudDecoder.decode(ParkCloudSyncPayload.self, from: data) {
+                    returnedPayload = decoded
+                    break
                 }
                 if attempt < 3 {
                     try? await Task.sleep(nanoseconds: UInt64(attempt) * 500_000_000)
                 }
             }
         }
+        
+        await MainActor.run {
+            self.uploadsInFlight -= 1
+            self.isBroadcasting = self.uploadsInFlight > 0
+            if let returnedPayload {
+                self.lastCloudSyncDate = Date()
+                self.lastSyncFailed = false
+                // An older upload finishing after a newer local change must not undo that change
+                if generation == self.localChangeGeneration {
+                    self.pendingUploadKind = nil
+                    self.applyCloudPayload(returnedPayload)
+                }
+            } else {
+                self.lastSyncFailed = true
+            }
+        }
+        return returnedPayload != nil
     }
     
+    private func makeLocalReportPayload(kind: LiveFeedUpdateKind) -> ParkCloudSyncPayload {
+        let qStatus = PickleQueueManager.shared.queueStatus
+        let walkOn = WalkOnCourtManager.shared.status
+        let reportDate = qStatus.pickleQueReportDate
+        return ParkCloudSyncPayload(
+            courtsInUse: qStatus.courtsInUse,
+            extraCourts: qStatus.extraCourts,
+            inQueue: qStatus.inQueue,
+            // Walk-on taps credit this phone's profile name, not whoever reported last
+            lastAuthor: kind == .full ? qStatus.lastAuthor : LeaderboardManager.shared.currentUser.name,
+            extraNotes: kind == .full ? qStatus.priorUpdates.first?.extraNotes : nil,
+            reportTimestamp: reportDate.timeIntervalSince1970,
+            court2State: walkOn.court2State.rawValue,
+            court3State: walkOn.court3State.rawValue,
+            reportAgeSeconds: max(0, Date().timeIntervalSince(reportDate)),
+            updateKind: kind.rawValue
+        )
+    }
+    
+    /// Applies the server's live state. The server never lets the live report move backwards in time,
+    /// so its answer is authoritative; callers skip responses that raced a newer local change.
     private func applyCloudPayload(_ payload: ParkCloudSyncPayload) {
+        guard payload.reportTimestamp > 1000 else { return }
         let qManager = PickleQueueManager.shared
         let cloudDate = Date(timeIntervalSince1970: payload.reportTimestamp)
-        guard payload.reportTimestamp > 1000 else { return }
         
         // Check if this is a brand-new remote queue update to notify the user
         ParkNotificationManager.shared.evaluateIncomingQueuePayload(payload)
         
-        // Apply whenever cloud update is newer than or equal to local report (or local is uninitialized)
-        if qManager.queueStatus.pickleQueReportDate.timeIntervalSince1970 < 1000 ||
-            cloudDate >= qManager.queueStatus.pickleQueReportDate {
-            qManager.queueStatus.courtsInUse = payload.courtsInUse
-            qManager.queueStatus.extraCourts = payload.extraCourts
-            qManager.queueStatus.inQueue = payload.inQueue
-            qManager.queueStatus.lastAuthor = payload.lastAuthor
-            qManager.queueStatus.pickleQueReportDate = cloudDate
-            qManager.queueStatus.lastAppSyncDate = Date()
-            
-            if let cloudPriors = payload.priorUpdates, !cloudPriors.isEmpty {
-                qManager.queueStatus.priorUpdates = cloudPriors.prefix(2).map {
+        var status = qManager.queueStatus
+        status.courtsInUse = payload.courtsInUse
+        status.extraCourts = payload.extraCourts
+        status.inQueue = payload.inQueue
+        status.lastAuthor = payload.lastAuthor
+        status.pickleQueReportDate = cloudDate
+        status.lastAppSyncDate = Date()
+        if let cloudPriors = payload.priorUpdates, !cloudPriors.isEmpty {
+            status.priorUpdates = cloudPriors
+                .sorted { $0.timestamp > $1.timestamp }
+                .prefix(2)
+                .map {
                     PickleQueUpdate(
                         id: $0.id,
                         courts: $0.courts,
@@ -202,31 +290,29 @@ public final class CommunityCloudService: ObservableObject {
                         timestamp: Date(timeIntervalSince1970: $0.timestamp)
                     )
                 }
-            }
-            qManager.saveLocalState()
-            
-            let deterministicId = "cf_live_\(Int(payload.reportTimestamp))"
-            CourtUsageAnalyticsService.shared.recordUsageSnapshot(
-                id: deterministicId,
-                timestamp: cloudDate,
-                courtsInUse: payload.courtsInUse,
-                peopleInQueue: payload.inQueue,
-                walkOnCourtsOpen: payload.extraCourts,
-                court2State: payload.court2State,
-                court3State: payload.court3State,
-                reporter: payload.lastAuthor,
-                pushToCloud: false
-            )
         }
+        qManager.queueStatus = status
+        qManager.saveLocalState()
         
-        // Apply walk-on states if valid
+        let deterministicId = "cf_live_\(Int(payload.reportTimestamp))"
+        CourtUsageAnalyticsService.shared.recordUsageSnapshot(
+            id: deterministicId,
+            timestamp: cloudDate,
+            courtsInUse: payload.courtsInUse,
+            peopleInQueue: payload.inQueue,
+            walkOnCourtsOpen: payload.extraCourts,
+            court2State: payload.court2State,
+            court3State: payload.court3State,
+            reporter: payload.lastAuthor,
+            pushToCloud: false
+        )
+        
+        // Walk-on sides reset at 11 PM / on a new day; otherwise mirror the server
         let walkOnManager = WalkOnCourtManager.shared
         if WalkOnCourtStatus.isDateExpired(cloudDate) {
             walkOnManager.status.court2State = .free
             walkOnManager.status.court3State = .free
-            walkOnManager.save()
-        } else if walkOnManager.status.lastReportDate.timeIntervalSince1970 < 1000 ||
-                    cloudDate >= walkOnManager.status.lastReportDate {
+        } else {
             if let c2 = CourtSideOccupancy(rawValue: payload.court2State) {
                 walkOnManager.status.court2State = c2
             }
@@ -235,8 +321,8 @@ public final class CommunityCloudService: ObservableObject {
             }
             walkOnManager.status.lastReportDate = cloudDate
             walkOnManager.status.lastReporterName = payload.lastAuthor
-            walkOnManager.save()
         }
+        walkOnManager.save()
     }
     
     // MARK: - Auto-Clipboard Ingestion Bridge
@@ -244,13 +330,24 @@ public final class CommunityCloudService: ObservableObject {
     /// Checks system pasteboard for PickleQue / Court activity text and auto-ingests it
     @MainActor
     public func checkAndIngestClipboard() -> Bool {
-        guard let clipboardText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+        // Only look at the clipboard once per new copy, so the same text is never re-posted
+        // and iOS doesn't show a paste prompt on every app open
+        let pasteboard = UIPasteboard.general
+        let defaults = UserDefaults.standard
+        guard pasteboard.hasStrings,
+              pasteboard.changeCount != defaults.integer(forKey: lastClipboardChangeCountKey) else {
+            return false
+        }
+        defaults.set(pasteboard.changeCount, forKey: lastClipboardChangeCountKey)
+        
+        guard let clipboardText = pasteboard.string?.trimmingCharacters(in: .whitespacesAndNewlines),
               !clipboardText.isEmpty else {
             return false
         }
         
         // Check if clipboard contains PickleQue or court patterns
-        // E.g., "Courts: 4, Extra: 2, Queue: 12", "4 courts in use, 14 waiting", "4/0/14", etc.
+        // E.g., "Courts: 4, Extra: 2, Queue: 12", "4 courts in use, 14 waiting". Both a courts and a
+        // queue keyword are required so copied dates, prices or phone numbers are never posted as a report.
         if let parsed = parseCourtText(clipboardText) {
             let lastStored = PickleQueueManager.shared.queueStatus
             
@@ -269,8 +366,6 @@ public final class CommunityCloudService: ObservableObject {
                 author: parsed.author ?? "Auto-Sync",
                 extraNotes: "Auto-synced from Clipboard"
             )
-            
-            broadcastToCloud()
             
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 syncBannerMessage = "🟢 Auto-synced from PickleQue clipboard!"
@@ -322,19 +417,6 @@ public final class CommunityCloudService: ObservableObject {
             queue = Int(queueMatch)
         } else if let qMatch = regexMatch(pattern: #"queue:\s*(\d+)"#, in: lower) {
             queue = Int(qMatch)
-        }
-        
-        // Format fallback: "4 / 2 / 14"
-        if courts == nil && queue == nil {
-            let parts = lower.components(separatedBy: CharacterSet(charactersIn: ",/-| \n"))
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .compactMap { Int($0) }
-            
-            if parts.count >= 2 {
-                courts = parts[0]
-                queue = parts.count >= 3 ? parts[2] : parts[1]
-                if parts.count >= 3 { extra = parts[1] }
-            }
         }
         
         if let c = courts, let q = queue {

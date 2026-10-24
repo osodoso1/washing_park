@@ -224,11 +224,18 @@ public struct PickleQueSection: View {
                 
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(AppTheme.availableGreen)
+                        .fill(cloudService.lastSyncFailed ? Color.orange : AppTheme.availableGreen)
                         .frame(width: 6, height: 6)
-                    Text("Live Cloud Synced: \(formattedSyncTime(from: queueManager.queueStatus.lastAppSyncDate))")
+                    Text(liveSyncStatusText)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(cloudService.lastSyncFailed ? Color.orange : AppTheme.textSecondary)
+                }
+                
+                if isLastReportStale {
+                    Text("No newer reports from players yet. Tap Input Activity to post one.")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(AppTheme.textSecondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding(.top, 1)
@@ -287,7 +294,7 @@ public struct PickleQueSection: View {
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(AppTheme.textPrimary)
                     
-                    ForEach(queueManager.queueStatus.priorUpdates.prefix(2)) { update in
+                    ForEach(queueManager.queueStatus.priorUpdates.sorted(by: { $0.timestamp > $1.timestamp }).prefix(2)) { update in
                         let pastWait = CourtUsageAnalyticsService.calculateEstimatedWaitMinutes(courtsInUse: update.courts, peopleInQueue: update.queue, walkOnCourtsOpen: update.extra)
                         Text("Courts: \(update.courts) | Queue: \(update.queue) (~\(pastWait)m wait) | Walk-On: \(update.extra) • \(timeAgo(from: update.timestamp))")
                             .font(.system(size: 11, weight: .medium))
@@ -829,6 +836,24 @@ public struct PickleQueSection: View {
         }
         
         return "\(dateString) (\(relativeString))"
+    }
+    
+    /// Reflects the last time this phone actually reached the live feed server, not the last tap of refresh
+    private var liveSyncStatusText: String {
+        guard let synced = cloudService.lastCloudSyncDate else {
+            return cloudService.lastSyncFailed ? "Offline: can't reach the live feed" : "Connecting to live feed..."
+        }
+        let ago = formattedSyncTime(from: synced)
+        return cloudService.lastSyncFailed ? "Offline · Last synced \(ago.lowercased())" : "Live Cloud Synced: \(ago)"
+    }
+    
+    /// The feed is up to date but nobody has reported in a while
+    private var isLastReportStale: Bool {
+        let reportDate = queueManager.queueStatus.pickleQueReportDate
+        return cloudService.lastCloudSyncDate != nil &&
+            !cloudService.lastSyncFailed &&
+            reportDate.timeIntervalSince1970 > 1000 &&
+            Date().timeIntervalSince(reportDate) > 2 * 3600
     }
     
     private func formattedSyncTime(from date: Date) -> String {

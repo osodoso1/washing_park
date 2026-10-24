@@ -121,10 +121,7 @@ public final class PickleQueueManager: ObservableObject {
     }
     
     public func refreshActivity() {
-        queueStatus.lastAppSyncDate = Date()
-        save()
         Task {
-            await CloudKitManager.shared.fetchLatestCourtActivity()
             await CommunityCloudService.shared.pullLatestFromCloud()
             await CourtUsageAnalyticsService.shared.fetchCloudTelemetryLogs()
         }

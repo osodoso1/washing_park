@@ -89,7 +89,7 @@ public final class WalkOnCourtManager: ObservableObject {
             c2State: status.court2State.rawValue,
             c3State: status.court3State.rawValue
         )
-        CommunityCloudService.shared.broadcastToCloud()
+        CommunityCloudService.shared.broadcastToCloud(kind: .walkOnCourt2)
         
         CourtUsageAnalyticsService.shared.recordUsageSnapshot(
             courtsInUse: qStatus.courtsInUse,
@@ -132,7 +132,7 @@ public final class WalkOnCourtManager: ObservableObject {
             c2State: status.court2State.rawValue,
             c3State: status.court3State.rawValue
         )
-        CommunityCloudService.shared.broadcastToCloud()
+        CommunityCloudService.shared.broadcastToCloud(kind: .walkOnCourt3)
         
         CourtUsageAnalyticsService.shared.recordUsageSnapshot(
             courtsInUse: qStatus.courtsInUse,
