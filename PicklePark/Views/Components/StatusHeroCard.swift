@@ -85,27 +85,43 @@ public struct StatusHeroCard: View {
                     HapticFeedback.light()
                     onClubhouseHoursTap()
                 }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "building.2.crop.circle.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(AppTheme.burlingameBlue)
-                        
-                        Text("Clubhouse: 8a–7p · Lights: 10p")
-                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                            .foregroundColor(AppTheme.textPrimary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        
-                        Spacer(minLength: 2)
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(AppTheme.burlingameBlue)
+                    // Today's hours (Pacific time), refreshed every minute so the day and
+                    // open/closed dot roll over on their own while the app stays open.
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        let isOpen = ClubhouseSchedule.isOpen(at: context.date)
+
+                        HStack(spacing: 5) {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "building.2.crop.circle.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(AppTheme.burlingameBlue)
+
+                                Circle()
+                                    .fill(isOpen ? AppTheme.availableGreen : AppTheme.textSecondary.opacity(0.7))
+                                    .frame(width: 6, height: 6)
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 1))
+                                    .offset(x: 2, y: -2)
+                            }
+
+                            Text(ClubhouseSchedule.stripLabel(at: context.date))
+                                .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                                .foregroundColor(AppTheme.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+
+                            Spacer(minLength: 2)
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppTheme.burlingameBlue)
+                        }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 7)
+                        .background(AppTheme.burlingameBlue.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(ClubhouseSchedule.accessibilityLabel(at: context.date))
                     }
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 7)
-                    .background(AppTheme.burlingameBlue.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 
