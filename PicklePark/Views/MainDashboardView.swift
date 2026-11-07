@@ -22,6 +22,7 @@ public struct MainDashboardView: View {
     @State private var navSpinDegrees: Double = 0.0
     @State private var refreshStatusToast: String? = nil
     private let liveSyncTimer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
+    @State private var liveSyncTick: Int = 0
     
     public init() {}
     
@@ -318,10 +319,16 @@ public struct MainDashboardView: View {
             }
             .onReceive(liveSyncTimer) { _ in
                 guard scenePhase == .active else { return }
+                liveSyncTick += 1
+                let refreshLeaderboard = liveSyncTick % 3 == 0
                 Task {
                     await cloudService.pullLatestFromCloud()
-                    await lostAndFoundManager.pullLatestFromCloud()
+                    await lostAndFoundManager.pullLatestFromCloud(allowNotModified: true)
                     await CourtUsageAnalyticsService.shared.fetchCloudTelemetryLogs()
+                    if refreshLeaderboard {
+                        // Every 30 seconds is plenty for points and new players
+                        await cloudKitManager.fetchLeaderboardFromCloud()
+                    }
                 }
             }
         }

@@ -819,6 +819,8 @@ public struct PickleQueSection: View {
     }
     
     private func formattedReportDate(from date: Date) -> String {
+        // Fresh install before the first sync (or an empty feed) has no report yet
+        guard date.timeIntervalSince1970 > 1000 else { return "No reports yet" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, h:mm a"
         let dateString = formatter.string(from: date)

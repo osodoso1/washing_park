@@ -40,6 +40,25 @@ public struct LeaderboardUser: Identifiable, Codable, Hashable {
         self.avatarEmoji = avatarEmoji
     }
     
+    /// Older builds saved this placeholder as the player's own name, so it read as "me" on everyone's phone
+    public static let legacyPlaceholderName = "Player (You)"
+
+    /// Stable default for players who never set a name, e.g. "Player 3553" (the server uses the same rule)
+    public static func defaultName(forId id: String) -> String {
+        let raw = id.hasPrefix("player_") ? String(id.dropFirst("player_".count)) : id
+        let suffix = raw.prefix(4).uppercased()
+        return suffix.isEmpty ? "Player" : "Player \(suffix)"
+    }
+
+    /// Name shown on the leaderboard to everyone
+    public var displayName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == Self.legacyPlaceholderName {
+            return Self.defaultName(forId: id)
+        }
+        return trimmed
+    }
+
     public func points(for scope: LeaderboardScope) -> Int {
         switch scope {
         case .thisMonth: return monthlyPoints
@@ -62,4 +81,31 @@ public struct LeaderboardUser: Identifiable, Codable, Hashable {
         default: return "🥉 Bronze Helper"
         }
     }
+}
+
+/// One points award. It is uploaded with a unique id so the server adds it exactly once,
+/// even when the phone retries or two devices share the same player.
+public struct LeaderboardAward: Codable, Equatable {
+    public let id: String
+    public let allTimePoints: Int
+    public let allTimeReports: Int
+    public let monthlyPoints: Int
+    public let monthlyReports: Int
+}
+
+/// What this phone uploads for its own player
+public struct LeaderboardUpload: Encodable {
+    public let id: String
+    public let name: String
+    public let monthlyPoints: Int
+    public let allTimePoints: Int
+    public let monthlyReports: Int
+    public let allTimeReports: Int
+    public let isCurrentUser: Bool
+    public let favoriteSnack: String
+    public let avatarEmoji: String
+    public let monthKey: String
+    public let awards: [LeaderboardAward]
+    /// Previous player id on this phone whose points were folded into `id`
+    public let mergedFrom: String?
 }

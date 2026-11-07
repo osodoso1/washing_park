@@ -278,7 +278,12 @@ public final class LostAndFoundManager: ObservableObject {
     private let ownerUnlockedKey = "washington_park_lost_and_found_owner_v1"
     private let ownerPasscode = "osodoso"
     
-    private let cloudEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_lost_and_found_v1"
+    /// Overridable so the test suite uses an isolated board instead of production
+    var endpointPath = "wp_lost_and_found_v1"
+    private var cloudEndpointURL: String { "\(CommunityCloudService.baseWorkerURL)/\(endpointPath)" }
+    /// Version tag of the last board this phone downloaded (main thread); lets the 10-second
+    /// refresh skip re-downloading every photo when nothing changed
+    private var lastBoardETag: String? = nil
     private var publicDB: CKDatabase {
         CKContainer(identifier: "iCloud.com.dominicsoriano.washingpark").publicCloudDatabase
     }
@@ -533,20 +538,33 @@ public final class LostAndFoundManager: ObservableObject {
         let deletedIds: [String]?
     }
     
-    public func pullLatestFromCloud() async {
+    /// - Parameter allowNotModified: true for the frequent background refresh, which only downloads
+    ///   the board when it changed. Launch and manual refresh do a full download and merge.
+    public func pullLatestFromCloud(allowNotModified: Bool = false) async {
         await MainActor.run { self.isSyncing = true }
         defer {
             Task { @MainActor in self.isSyncing = false }
         }
         
-        // 1. Pull from Cloudflare Worker KV endpoint with deletedIds tombstone envelope
+        // 1. Pull from the Cloudflare Worker with the deletedIds tombstone envelope
         var syncedFromWorker = false
         if let url = URL(string: "\(cloudEndpointURL)?envelope=1") {
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
             request.httpMethod = "GET"
+            let knownETag = await MainActor.run { self.lastBoardETag }
+            if allowNotModified, let knownETag {
+                request.setValue(knownETag, forHTTPHeaderField: "If-None-Match")
+            }
             let decoder = JSONDecoder.pickleParkCloudDecoder
             if let (data, response) = try? await URLSession.shared.data(for: request),
-               let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 {
+               let httpResp = response as? HTTPURLResponse,
+               httpResp.statusCode == 200 || httpResp.statusCode == 304 {
+                if httpResp.statusCode == 304 {
+                    // Board unchanged since the last download
+                    return
+                }
+                let etag = httpResp.value(forHTTPHeaderField: "ETag")
+                await MainActor.run { self.lastBoardETag = etag }
                 if let envelope = try? decoder.decode(LostFoundSyncEnvelope.self, from: data) {
                     syncedFromWorker = true
                     await MainActor.run {
@@ -561,7 +579,8 @@ public final class LostAndFoundManager: ObservableObject {
             }
         }
         
-        // 2. Pull from CloudKit public database as secondary mirror
+        // 2. CloudKit public database, only when the Worker can't be reached
+        guard !syncedFromWorker else { return }
         let query = CKQuery(recordType: "LostAndFoundRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "lostDate", ascending: false)]
         
@@ -605,7 +624,7 @@ public final class LostAndFoundManager: ObservableObject {
                     )
                 }
             }
-            if !ckItems.isEmpty && !syncedFromWorker {
+            if !ckItems.isEmpty {
                 await MainActor.run {
                     self.mergeRemoteItems(ckItems)
                 }
@@ -707,6 +726,8 @@ public final class LostAndFoundManager: ObservableObject {
                 try? await Task.sleep(nanoseconds: UInt64(attempt) * 600_000_000)
             }
         }
+        // Not delivered: the next refresh does a full merge, which re-sends items missing on the server
+        await MainActor.run { self.lastBoardETag = nil }
     }
     
     private func deleteItemsFromCommunityCloud(_ ids: [String]) async {
@@ -739,7 +760,10 @@ public final class LostAndFoundManager: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = data
-        _ = try? await URLSession.shared.data(for: request)
+        let delivered = (try? await URLSession.shared.data(for: request)).map { ($0.1 as? HTTPURLResponse)?.statusCode == 200 } ?? false
+        if !delivered {
+            await MainActor.run { self.lastBoardETag = nil }
+        }
     }
     
     private func pushItemToCloudKit(_ item: LostAndFoundItem) {

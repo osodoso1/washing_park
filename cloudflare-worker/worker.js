@@ -4,8 +4,8 @@
 //    Served by a Durable Object so every device reads the same state instantly and
 //    concurrent reports are applied one at a time (KV is only an eventually-consistent mirror).
 // 2. Hourly Wait-Time Analytics & City Telemetry (/wp_city_telemetry_osodoso_v1)
-// 3. Washington Park Lost & Found Board (/wp_lost_and_found_v1)
-// 4. Community Leaderboard (/wp_leaderboard_v1)
+// 3. Washington Park Lost & Found Board (/wp_lost_and_found_v1)   - Durable Object
+// 4. Community Leaderboard (/wp_leaderboard_v1)                      - Durable Object
 // 5. Community Suggestions & Feedback (/wp_feedback_v1)
 
 import { DurableObject } from "cloudflare:workers";
@@ -241,6 +241,366 @@ async function handleLiveFeed(request, env, ctx, feedKey) {
   return jsonResponse({ error: "Method not allowed" }, 405);
 }
 
+// ---------------------------------------------------------------------------
+// Community Leaderboard + Lost & Found (Durable Object, KV mirror)
+// ---------------------------------------------------------------------------
+
+// Production stores plus isolated copies the XCTest suite writes to
+const LEADERBOARD_KEYS = new Set(["wp_leaderboard_v1", "wp_leaderboard_test_v1"]);
+const LOST_FOUND_KEYS = new Map([
+  ["wp_lost_and_found_v1", "wp_lost_and_found_store_v2"],
+  ["wp_lost_and_found_test_v1", "wp_lost_and_found_test_store_v1"],
+]);
+const LOST_FOUND_ITEM_LIMIT = 80;
+const LOST_FOUND_TOMBSTONE_LIMIT = 200;
+const LEADERBOARD_USER_LIMIT = 200;
+const LEADERBOARD_AWARD_MEMORY = 100;
+// Older builds saved this placeholder as the player's name, so every unnamed player looked like "you"
+const PLACEHOLDER_PLAYER_NAME = "Player (You)";
+const DEFAULT_LOST_FOUND_REPORTER = "Washington Park Player";
+
+// Same "<year>-<month>" key the app uses, in park-local time
+function pacificMonthKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === "year").value;
+  const month = parts.find((p) => p.type === "month").value;
+  return `${year}-${Number(month)}`;
+}
+
+function defaultPlayerName(id) {
+  const suffix = String(id || "").replace(/^player_/, "").slice(0, 4).toUpperCase();
+  return suffix ? `Player ${suffix}` : "Player";
+}
+
+function leaderboardName(name, id) {
+  const trimmed = typeof name === "string" ? name.trim() : "";
+  if (!trimmed || trimmed === PLACEHOLDER_PLAYER_NAME) return defaultPlayerName(id);
+  return trimmed.slice(0, 60);
+}
+
+function nonNegativeInt(val) {
+  return clampInt(val, 0, 10000000, 0);
+}
+
+// Applies uploads from phones. New builds send each point award once with a unique id
+// (so two devices on the same account add up instead of overwriting each other);
+// totals are only used as a floor, which also covers older builds that send totals only.
+function mergeLeaderboard(users, body, monthKey) {
+  const incoming = Array.isArray(body) ? body : body ? [body] : [];
+  const byId = new Map();
+  for (const u of users) {
+    if (u && u.id) byId.set(u.id, u);
+  }
+
+  for (const u of incoming) {
+    if (!u || typeof u.id !== "string" || !u.id) continue;
+    if (typeof u.mergedFrom === "string" && u.mergedFrom && u.mergedFrom !== u.id) {
+      // Same person's old device id: its points arrive as an award below, so drop the duplicate row
+      byId.delete(u.mergedFrom);
+    }
+
+    const prev = byId.get(u.id);
+    const entry = prev
+      ? { ...prev }
+      : { id: u.id, monthlyPoints: 0, allTimePoints: 0, monthlyReports: 0, allTimeReports: 0, recentAwardIds: [] };
+    if (entry.monthKey !== monthKey) {
+      entry.monthlyPoints = 0;
+      entry.monthlyReports = 0;
+      entry.monthKey = monthKey;
+    }
+
+    const seen = new Set(entry.recentAwardIds || []);
+    for (const award of Array.isArray(u.awards) ? u.awards : []) {
+      if (!award || typeof award.id !== "string" || seen.has(award.id)) continue;
+      seen.add(award.id);
+      entry.allTimePoints += clampInt(award.allTimePoints, 0, 100000, 0);
+      entry.allTimeReports += clampInt(award.allTimeReports, 0, 100000, 0);
+      entry.monthlyPoints += clampInt(award.monthlyPoints, 0, 100000, 0);
+      entry.monthlyReports += clampInt(award.monthlyReports, 0, 100000, 0);
+    }
+    entry.recentAwardIds = Array.from(seen).slice(-LEADERBOARD_AWARD_MEMORY);
+
+    entry.allTimePoints = Math.max(entry.allTimePoints, nonNegativeInt(u.allTimePoints));
+    entry.allTimeReports = Math.max(entry.allTimeReports, nonNegativeInt(u.allTimeReports));
+    if (!u.monthKey || u.monthKey === monthKey) {
+      entry.monthlyPoints = Math.max(entry.monthlyPoints, nonNegativeInt(u.monthlyPoints));
+      entry.monthlyReports = Math.max(entry.monthlyReports, nonNegativeInt(u.monthlyReports));
+    }
+
+    entry.name = leaderboardName(u.name, u.id);
+    entry.favoriteSnack = cleanString(u.favoriteSnack) || entry.favoriteSnack || "Cold Coconut Water & RXBar";
+    entry.avatarEmoji = (typeof u.avatarEmoji === "string" && u.avatarEmoji.trim().slice(0, 8)) || entry.avatarEmoji || "🎾";
+    entry.isCurrentUser = false;
+    byId.set(u.id, entry);
+  }
+
+  return Array.from(byId.values())
+    .sort((a, b) => (b.allTimePoints || 0) - (a.allTimePoints || 0))
+    .slice(0, LEADERBOARD_USER_LIMIT);
+}
+
+// What every phone sees: unique names, last month's points shown as 0, internal fields stripped
+function leaderboardForViewers(users, monthKey) {
+  return users
+    .filter((u) => u && u.id)
+    .map((u) => {
+      const thisMonth = (u.monthKey || monthKey) === monthKey;
+      return {
+        id: u.id,
+        name: leaderboardName(u.name, u.id),
+        monthlyPoints: thisMonth ? u.monthlyPoints || 0 : 0,
+        allTimePoints: u.allTimePoints || 0,
+        monthlyReports: thisMonth ? u.monthlyReports || 0 : 0,
+        allTimeReports: u.allTimeReports || 0,
+        isCurrentUser: false,
+        favoriteSnack: u.favoriteSnack || "Cold Coconut Water & RXBar",
+        avatarEmoji: u.avatarEmoji || "🎾",
+      };
+    })
+    .sort((a, b) => b.monthlyPoints - a.monthlyPoints || b.allTimePoints - a.allTimePoints)
+    .slice(0, 100);
+}
+
+function lostFoundPersonName(name) {
+  if (typeof name !== "string") return name;
+  return name.trim() === PLACEHOLDER_PLAYER_NAME ? DEFAULT_LOST_FOUND_REPORTER : name;
+}
+
+function normalizeLostFoundItem(item) {
+  return {
+    ...item,
+    reporterName: lostFoundPersonName(item.reporterName) || DEFAULT_LOST_FOUND_REPORTER,
+    foundByName: lostFoundPersonName(item.foundByName) ?? null,
+  };
+}
+
+function itemUpdatedMs(item) {
+  return parseTimestampMs(item.updatedAt || item.foundDate || item.lostDate);
+}
+
+function activeLostFoundItems(store) {
+  const deletedSet = new Set(store.deletedIds);
+  return store.items
+    .filter((item) => item && item.id && !deletedSet.has(item.id))
+    .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate));
+}
+
+// Applies one POST to the Lost & Found store. Newer edits win; an owner delete is permanent.
+function applyLostFoundPost(store, body) {
+  const deletedSet = new Set(store.deletedIds);
+  const byId = new Map();
+  for (const item of store.items) {
+    if (item && item.id && !deletedSet.has(item.id)) byId.set(item.id, item);
+  }
+
+  const mergeSingleItem = (incomingItem) => {
+    if (!incomingItem || !incomingItem.id || deletedSet.has(incomingItem.id)) return;
+    const existing = byId.get(incomingItem.id);
+    // Phones re-upload their saved copies; only a strictly newer copy may replace the server's
+    if (!existing || itemUpdatedMs(incomingItem) > itemUpdatedMs(existing)) {
+      byId.set(incomingItem.id, normalizeLostFoundItem(incomingItem));
+    }
+  };
+
+  if (body && !Array.isArray(body) && body.action === "delete" && Array.isArray(body.ids)) {
+    for (const delId of body.ids) {
+      if (typeof delId !== "string") continue;
+      deletedSet.add(delId);
+      byId.delete(delId);
+    }
+  } else if (body && !Array.isArray(body) && body.action === "upsert" && body.item) {
+    // An explicit edit replaces the item, but can't bring back one the owner deleted
+    if (body.item.id && !deletedSet.has(body.item.id)) {
+      byId.set(body.item.id, normalizeLostFoundItem(body.item));
+    }
+  } else if (body && !Array.isArray(body) && body.action === "sync" && Array.isArray(body.items)) {
+    body.items.forEach(mergeSingleItem);
+  } else if (Array.isArray(body)) {
+    body.forEach(mergeSingleItem);
+  }
+
+  const items = Array.from(byId.values())
+    .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate))
+    .slice(0, LOST_FOUND_ITEM_LIMIT);
+  return { items, deletedIds: Array.from(deletedSet).slice(-LOST_FOUND_TOMBSTONE_LIMIT) };
+}
+
+function lostFoundResponse(store, includeEnvelope, body, etag) {
+  const activeItems = activeLostFoundItems(store);
+  const wantsEnvelope = includeEnvelope || (body && body.action === "sync");
+  const response = jsonResponse(wantsEnvelope ? { items: activeItems, deletedIds: store.deletedIds } : activeItems, 200);
+  if (etag) response.headers.set("ETag", etag);
+  return response;
+}
+
+// One instance per store key. Lost & Found items are stored one per key because photos make
+// the whole board too big for a single Durable Object value.
+export class CommunityStoreDO extends DurableObject {
+  // ---- Leaderboard ----
+  async loadLeaderboard(kvKey, monthKey) {
+    if (this.users) return this.users;
+    await this.ctx.blockConcurrencyWhile(async () => {
+      if (this.users) return;
+      let users = await this.ctx.storage.get("lb:users");
+      if (!users) {
+        const raw = this.env.PICKLEPARK_KV ? await this.env.PICKLEPARK_KV.get(kvKey) : null;
+        const seeded = raw ? JSON.parse(raw) : [];
+        // Rows saved before monthly tracking existed are from the current month
+        users = (Array.isArray(seeded) ? seeded : []).map((u) => ({ ...u, monthKey: u.monthKey || monthKey }));
+        await this.ctx.storage.put("lb:users", users);
+      }
+      this.users = users;
+    });
+    return this.users;
+  }
+
+  async leaderboardGet(kvKey, monthKey) {
+    return leaderboardForViewers(await this.loadLeaderboard(kvKey, monthKey), monthKey);
+  }
+
+  async leaderboardPost(kvKey, body, monthKey) {
+    const users = mergeLeaderboard(await this.loadLeaderboard(kvKey, monthKey), body, monthKey);
+    this.users = users;
+    await this.ctx.storage.put("lb:users", users);
+    return { users: leaderboardForViewers(users, monthKey), stored: users };
+  }
+
+  // ---- Lost & Found ----
+  async loadLostFound(kvStoreKey) {
+    if (this.lostFound) return this.lostFound;
+    await this.ctx.blockConcurrencyWhile(async () => {
+      if (this.lostFound) return;
+      const seeded = await this.ctx.storage.get("lf:seeded");
+      if (!seeded) {
+        const raw = this.env.PICKLEPARK_KV ? await this.env.PICKLEPARK_KV.get(kvStoreKey) : null;
+        const parsed = raw ? JSON.parse(raw) : {};
+        const items = (Array.isArray(parsed.items) ? parsed.items : []).filter((i) => i && i.id).map(normalizeLostFoundItem);
+        const deletedIds = Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [];
+        for (const item of items) await this.ctx.storage.put(`lf:item:${item.id}`, item);
+        await this.ctx.storage.put("lf:deleted", deletedIds);
+        await this.ctx.storage.put("lf:version", 1);
+        await this.ctx.storage.put("lf:seeded", true);
+      }
+      const itemMap = await this.ctx.storage.list({ prefix: "lf:item:" });
+      this.lostFound = {
+        store: { items: Array.from(itemMap.values()), deletedIds: (await this.ctx.storage.get("lf:deleted")) || [] },
+        version: (await this.ctx.storage.get("lf:version")) || 1,
+      };
+    });
+    return this.lostFound;
+  }
+
+  async lostFoundGet(kvStoreKey) {
+    const { store, version } = await this.loadLostFound(kvStoreKey);
+    return { store, version };
+  }
+
+  async lostFoundPost(kvStoreKey, body) {
+    const current = await this.loadLostFound(kvStoreKey);
+    const next = applyLostFoundPost(current.store, body);
+
+    const before = new Map(current.store.items.map((i) => [i.id, JSON.stringify(i)]));
+    const after = new Set();
+    for (const item of next.items) {
+      after.add(item.id);
+      if (before.get(item.id) !== JSON.stringify(item)) {
+        await this.ctx.storage.put(`lf:item:${item.id}`, item);
+      }
+    }
+    for (const id of before.keys()) {
+      if (!after.has(id)) await this.ctx.storage.delete(`lf:item:${id}`);
+    }
+    await this.ctx.storage.put("lf:deleted", next.deletedIds);
+    const version = current.version + 1;
+    await this.ctx.storage.put("lf:version", version);
+
+    this.lostFound = { store: next, version };
+    return { store: next, version };
+  }
+}
+
+async function handleLeaderboard(request, env, ctx, storeKey) {
+  const kv = env.PICKLEPARK_KV;
+  const monthKey = pacificMonthKey();
+
+  if (env.COMMUNITY_STORE) {
+    const stub = env.COMMUNITY_STORE.get(env.COMMUNITY_STORE.idFromName(storeKey));
+    if (request.method === "GET") {
+      return jsonResponse(await stub.leaderboardGet(storeKey, monthKey), 200);
+    }
+    if (request.method === "POST" || request.method === "PUT") {
+      const body = await request.json();
+      const result = await stub.leaderboardPost(storeKey, body, monthKey);
+      ctx.waitUntil(kv.put(storeKey, JSON.stringify(result.stored)));
+      return jsonResponse(result.users, 200);
+    }
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+
+  // Fallback when the Durable Object binding is unavailable: KV only
+  const raw = await kv.get(storeKey);
+  const users = raw ? JSON.parse(raw) : [];
+  if (request.method === "GET") {
+    return jsonResponse(leaderboardForViewers(Array.isArray(users) ? users : [], monthKey), 200);
+  }
+  if (request.method === "POST" || request.method === "PUT") {
+    const merged = mergeLeaderboard(Array.isArray(users) ? users : [], await request.json(), monthKey);
+    await kv.put(storeKey, JSON.stringify(merged));
+    return jsonResponse(leaderboardForViewers(merged, monthKey), 200);
+  }
+  return jsonResponse({ error: "Method not allowed" }, 405);
+}
+
+async function handleLostFound(request, env, ctx, url, path) {
+  const kv = env.PICKLEPARK_KV;
+  const kvStoreKey = LOST_FOUND_KEYS.get(path);
+  const includeEnvelope = url.searchParams.get("envelope") === "1";
+
+  if (env.COMMUNITY_STORE) {
+    const stub = env.COMMUNITY_STORE.get(env.COMMUNITY_STORE.idFromName(path));
+    if (request.method === "GET") {
+      const { store, version } = await stub.lostFoundGet(kvStoreKey);
+      // Lets phones skip re-downloading every photo when nothing changed
+      const etag = `"lf-${version}-${includeEnvelope ? "e" : "a"}"`;
+      // Cloudflare marks the tag weak (W/"...") when it compresses the response; phones echo that back
+      const clientTag = (request.headers.get("If-None-Match") || "").replace(/^W\//, "");
+      if (clientTag === etag) {
+        return new Response(null, { status: 304, headers: { ETag: etag, ...CORS_HEADERS } });
+      }
+      return lostFoundResponse(store, includeEnvelope, null, etag);
+    }
+    if (request.method === "POST" || request.method === "PUT") {
+      const body = await request.json();
+      const { store } = await stub.lostFoundPost(kvStoreKey, body);
+      ctx.waitUntil(kv.put(kvStoreKey, JSON.stringify(store)));
+      return lostFoundResponse(store, includeEnvelope, body, null);
+    }
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+
+  // Fallback when the Durable Object binding is unavailable: KV only
+  const rawStore = await kv.get(kvStoreKey);
+  const parsed = rawStore ? JSON.parse(rawStore) : {};
+  const store = {
+    items: Array.isArray(parsed.items) ? parsed.items : [],
+    deletedIds: Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [],
+  };
+  if (request.method === "GET") {
+    return lostFoundResponse(store, includeEnvelope, null, null);
+  }
+  if (request.method === "POST" || request.method === "PUT") {
+    const body = await request.json();
+    const next = applyLostFoundPost(store, body);
+    await kv.put(kvStoreKey, JSON.stringify(next));
+    return lostFoundResponse(next, includeEnvelope, body, null);
+  }
+  return jsonResponse({ error: "Method not allowed" }, 405);
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
@@ -255,8 +615,9 @@ export default {
       if (path === "" || path === "health") {
         return jsonResponse({
           ok: true,
-          version: "3.0",
+          version: "3.1",
           liveFeedStore: env.LIVE_FEED ? "durable-object" : "kv",
+          communityStore: env.COMMUNITY_STORE ? "durable-object" : "kv",
           service: "PicklePark Crowdsourced Sync Engine",
           timestamp: Date.now() / 1000,
         });
@@ -272,88 +633,8 @@ export default {
       // -----------------------------------------------------------------------
       // 2. LOST & FOUND BOARD (/wp_lost_and_found_v1)
       // -----------------------------------------------------------------------
-      if (path === "wp_lost_and_found_v1") {
-        const includeEnvelope = url.searchParams.get("envelope") === "1";
-        const rawStore = await kv.get("wp_lost_and_found_store_v2");
-        let store = rawStore ? JSON.parse(rawStore) : { items: [], deletedIds: [] };
-        if (!Array.isArray(store.items)) store.items = [];
-        if (!Array.isArray(store.deletedIds)) store.deletedIds = [];
-
-        if (request.method === "GET") {
-          const deletedSet = new Set(store.deletedIds);
-          const activeItems = store.items
-            .filter((item) => item && item.id && !deletedSet.has(item.id))
-            .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate));
-          if (includeEnvelope) {
-            return jsonResponse({ items: activeItems, deletedIds: store.deletedIds }, 200);
-          }
-          return jsonResponse(activeItems, 200);
-        }
-
-        if (request.method === "POST" || request.method === "PUT") {
-          const body = await request.json();
-          const deletedSet = new Set(store.deletedIds);
-          const byId = new Map();
-          for (const item of store.items) {
-            if (item && item.id && !deletedSet.has(item.id)) {
-              byId.set(item.id, item);
-            }
-          }
-
-          const mergeSingleItem = (incomingItem) => {
-            if (!incomingItem || !incomingItem.id || deletedSet.has(incomingItem.id)) return;
-            const existing = byId.get(incomingItem.id);
-            if (!existing) {
-              byId.set(incomingItem.id, incomingItem);
-            } else {
-              const incUpdated = incomingItem.updatedAt ? parseTimestampMs(incomingItem.updatedAt) : 0;
-              const exUpdated = existing.updatedAt ? parseTimestampMs(existing.updatedAt) : 0;
-              if (
-                incUpdated >= exUpdated ||
-                incomingItem.status === "MARKED FOUND" ||
-                incomingItem.isFlagged ||
-                (incomingItem.flagCount || 0) >= (existing.flagCount || 0)
-              ) {
-                byId.set(incomingItem.id, incomingItem);
-              }
-            }
-          };
-
-          if (body && !Array.isArray(body) && body.action === "delete" && Array.isArray(body.ids)) {
-            for (const delId of body.ids) {
-              deletedSet.add(delId);
-              byId.delete(delId);
-            }
-          } else if (body && !Array.isArray(body) && body.action === "upsert" && body.item) {
-            const item = body.item;
-            if (item && item.id) {
-              deletedSet.delete(item.id);
-              byId.set(item.id, item);
-            }
-          } else if (body && !Array.isArray(body) && body.action === "sync" && Array.isArray(body.items)) {
-            for (const incomingItem of body.items) {
-              mergeSingleItem(incomingItem);
-            }
-          } else if (Array.isArray(body)) {
-            for (const incomingItem of body) {
-              mergeSingleItem(incomingItem);
-            }
-          }
-
-          const mergedItems = Array.from(byId.values())
-            .sort((a, b) => parseTimestampMs(b.lostDate) - parseTimestampMs(a.lostDate))
-            .slice(0, 80);
-
-          const updatedStore = {
-            items: mergedItems,
-            deletedIds: Array.from(deletedSet).slice(-200),
-          };
-          await kv.put("wp_lost_and_found_store_v2", JSON.stringify(updatedStore));
-          if (includeEnvelope || (body && body.action === "sync")) {
-            return jsonResponse(updatedStore, 200);
-          }
-          return jsonResponse(mergedItems, 200);
-        }
+      if (LOST_FOUND_KEYS.has(path)) {
+        return await handleLostFound(request, env, ctx, url, path);
       }
 
       // -----------------------------------------------------------------------
@@ -392,35 +673,8 @@ export default {
       // -----------------------------------------------------------------------
       // 4. COMMUNITY LEADERBOARD (/wp_leaderboard_v1)
       // -----------------------------------------------------------------------
-      if (path === "wp_leaderboard_v1") {
-        const rawUsers = await kv.get("wp_leaderboard_v1");
-        let users = rawUsers ? JSON.parse(rawUsers) : [];
-        if (!Array.isArray(users)) users = [];
-
-        if (request.method === "GET") {
-          return jsonResponse(users, 200);
-        }
-
-        if (request.method === "POST" || request.method === "PUT") {
-          const body = await request.json();
-          const incoming = Array.isArray(body) ? body : body ? [body] : [];
-          const byId = new Map();
-          for (const u of users) {
-            if (u && u.id) byId.set(u.id, u);
-          }
-          for (const u of incoming) {
-            if (!u || !u.id) continue;
-            const prev = byId.get(u.id);
-            if (!prev || (u.allTimePoints || 0) >= (prev.allTimePoints || 0) || u.name !== prev.name) {
-              byId.set(u.id, { ...u, isCurrentUser: false });
-            }
-          }
-          const merged = Array.from(byId.values())
-            .sort((a, b) => (b.monthlyPoints || 0) - (a.monthlyPoints || 0))
-            .slice(0, 100);
-          await kv.put("wp_leaderboard_v1", JSON.stringify(merged));
-          return jsonResponse(merged, 200);
-        }
+      if (LEADERBOARD_KEYS.has(path)) {
+        return await handleLeaderboard(request, env, ctx, path);
       }
 
       // -----------------------------------------------------------------------

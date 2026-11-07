@@ -13,3 +13,11 @@ class_name = "LiveFeedDO"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["LiveFeedDO"]
+
+[[durable_objects.bindings]]
+name = "COMMUNITY_STORE"
+class_name = "CommunityStoreDO"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["CommunityStoreDO"]

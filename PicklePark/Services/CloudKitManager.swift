@@ -23,7 +23,9 @@ public final class CloudKitManager: ObservableObject {
     @Published public var cloudStatusMessage: String? = nil
     @Published public var communityFeedbackList: [CommunityFeedbackItem] = []
     
-    private let leaderboardEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_leaderboard_v1"
+    /// Overridable so the test suite uses an isolated leaderboard instead of production
+    var leaderboardPath = "wp_leaderboard_v1"
+    private var leaderboardEndpointURL: String { "\(CommunityCloudService.baseWorkerURL)/\(leaderboardPath)" }
     private let feedbackEndpointURL = "https://picklepark-sync.cf-watcher.workers.dev/wp_feedback_v1"
     
     public init() {
@@ -161,13 +163,13 @@ public final class CloudKitManager: ObservableObject {
         )
     }
     
-    // MARK: - Community Leaderboard CloudKit Sync
+    // MARK: - Community Leaderboard Sync (Cloudflare shared board, CloudKit fallback)
     
     public func pushUserToLeaderboard(user: LeaderboardUser) {
         let recordID = CKRecord.ID(recordName: "user_\(user.id)")
         let record = CKRecord(recordType: "LeaderboardUserRecord", recordID: recordID)
         record["userId"] = user.id as NSString
-        record["name"] = user.name as NSString
+        record["name"] = user.displayName as NSString
         record["monthlyPoints"] = user.monthlyPoints as NSNumber
         record["allTimePoints"] = user.allTimePoints as NSNumber
         record["monthlyReports"] = user.monthlyReports as NSNumber
@@ -180,41 +182,57 @@ public final class CloudKitManager: ObservableObject {
         modifyOp.savePolicy = .allKeys
         publicDB.add(modifyOp)
         
-        // Also push to Cloudflare Worker KV so leaderboard syncs across all devices
-        if let url = URL(string: leaderboardEndpointURL),
-           let data = try? JSONEncoder().encode([user]) {
-            Task {
-                var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
-                req.httpMethod = "POST"
-                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                req.httpBody = data
-                if let (respData, resp) = try? await URLSession.shared.data(for: req),
-                   let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
-                   let remoteUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: respData) {
-                    await MainActor.run {
-                        LeaderboardManager.shared.mergeCloudUsers(remoteUsers)
-                    }
-                }
-            }
+        Task {
+            await uploadCurrentPlayerToWorker()
         }
     }
     
+    /// Sends this phone's player (plus any points awards not yet delivered) to the shared leaderboard
+    func uploadCurrentPlayerToWorker() async {
+        guard let url = URL(string: leaderboardEndpointURL) else { return }
+        let upload = await MainActor.run { LeaderboardManager.shared.makeUpload() }
+        guard let data = try? JSONEncoder().encode([upload]) else { return }
+        
+        for attempt in 1...3 {
+            var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 8.0)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = data
+            if let (respData, resp) = try? await URLSession.shared.data(for: req),
+               let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
+               let remoteUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: respData) {
+                await MainActor.run {
+                    LeaderboardManager.shared.confirmUpload(upload)
+                    LeaderboardManager.shared.applyServerUsers(remoteUsers)
+                }
+                return
+            }
+            if attempt < 3 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 500_000_000)
+            }
+        }
+        // Undelivered awards stay pending and go out with the next leaderboard sync
+    }
+    
     public func fetchLeaderboardFromCloud() async {
-        // 1. Fetch from Cloudflare Worker KV
+        // 1. Cloudflare Worker: the shared board every player sees
         if let url = URL(string: leaderboardEndpointURL) {
             var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 6.0)
             req.httpMethod = "GET"
             if let (data, resp) = try? await URLSession.shared.data(for: req),
                let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200,
-               let workerUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: data),
-               !workerUsers.isEmpty {
-                await MainActor.run {
-                    LeaderboardManager.shared.mergeCloudUsers(workerUsers)
+               let workerUsers = try? JSONDecoder().decode([LeaderboardUser].self, from: data) {
+                let needsUpload = await MainActor.run {
+                    LeaderboardManager.shared.applyServerUsers(workerUsers)
                 }
+                if needsUpload {
+                    await uploadCurrentPlayerToWorker()
+                }
+                return
             }
         }
         
-        // 2. Fetch from CloudKit
+        // 2. CloudKit, only when the Worker can't be reached
         let query = CKQuery(recordType: "LeaderboardUserRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "monthlyPoints", ascending: false)]
         
@@ -232,7 +250,9 @@ public final class CloudKitManager: ObservableObject {
             
             if !cloudUsers.isEmpty {
                 await MainActor.run {
-                    LeaderboardManager.shared.mergeCloudUsers(cloudUsers)
+                    // CloudKit copies can be stale, so they only add players this phone hasn't seen
+                    let known = Set(LeaderboardManager.shared.users.map(\.id))
+                    LeaderboardManager.shared.applyServerUsers(cloudUsers.filter { !known.contains($0.id) })
                 }
             }
         } catch {

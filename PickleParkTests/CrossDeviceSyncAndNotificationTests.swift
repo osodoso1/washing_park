@@ -47,15 +47,22 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
         URL(string: "\(CommunityCloudService.baseWorkerURL)/\(testFeedPath)")!
     }
     
+    private let testLostFoundPath = "wp_lost_and_found_test_v1"
+    private let testLeaderboardPath = "wp_leaderboard_test_v1"
+    
     override func setUp() async throws {
         await MainActor.run {
             CommunityCloudService.shared.liveFeedPath = testFeedPath
+            LostAndFoundManager.shared.endpointPath = testLostFoundPath
+            CloudKitManager.shared.leaderboardPath = testLeaderboardPath
         }
     }
     
     override func tearDown() async throws {
         await MainActor.run {
             CommunityCloudService.shared.liveFeedPath = CommunityCloudService.productionFeedPath
+            LostAndFoundManager.shared.endpointPath = "wp_lost_and_found_v1"
+            CloudKitManager.shared.leaderboardPath = "wp_leaderboard_v1"
         }
     }
     
@@ -211,7 +218,7 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
         XCTAssertFalse(submission.wasAutoFlagged)
         
         // 2. Verify item is persisted on the remote Cloudflare KV database for Device B
-        let endpointURL = URL(string: "https://picklepark-sync.cf-watcher.workers.dev/wp_lost_and_found_v1?envelope=1")!
+        let endpointURL = URL(string: "\(CommunityCloudService.baseWorkerURL)/\(testLostFoundPath)?envelope=1")!
         var getReq = URLRequest(url: endpointURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10.0)
         getReq.httpMethod = "GET"
         
@@ -248,7 +255,48 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
         )
     }
     
-    // MARK: - 4. User Notification Preferences (Enable / Disable on Phone)
+    // MARK: - 4. Community Leaderboard Visible To Everyone
+    
+    func testEveryPlayerAppearsOnSharedLeaderboard() async throws {
+        let url = URL(string: "\(CommunityCloudService.baseWorkerURL)/\(testLeaderboardPath)")!
+        let suffix = UUID().uuidString.prefix(8)
+        let otherA = "player_A\(suffix)", otherB = "player_B\(suffix)"
+        
+        // Two other phones that never set a name (older builds upload the "Player (You)" placeholder)
+        for id in [otherA, otherB] {
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONEncoder().encode([LeaderboardUser(
+                id: id, name: LeaderboardUser.legacyPlaceholderName,
+                monthlyPoints: 10, allTimePoints: 10, monthlyReports: 1, allTimeReports: 1, isCurrentUser: true
+            )])
+            let (_, resp) = try await URLSession.shared.data(for: req)
+            XCTAssertEqual((resp as? HTTPURLResponse)?.statusCode, 200)
+        }
+        
+        // This phone earns points, then refreshes the board
+        let before = await MainActor.run { LeaderboardManager.shared.currentUser.allTimePoints }
+        await MainActor.run { LeaderboardManager.shared.addPoints(amount: 10) }
+        await CloudKitManager.shared.uploadCurrentPlayerToWorker()
+        await CloudKitManager.shared.fetchLeaderboardFromCloud()
+        
+        let users: [LeaderboardUser] = await MainActor.run { LeaderboardManager.shared.users }
+        let me = await MainActor.run { LeaderboardManager.shared.currentUser }
+        let a = try XCTUnwrap(users.first { $0.id == otherA }, "Other unnamed players must not be hidden behind this phone's name")
+        let b = try XCTUnwrap(users.first { $0.id == otherB })
+        XCTAssertNotEqual(a.displayName, b.displayName)
+        XCTAssertFalse(a.displayName.contains("(You)"))
+        XCTAssertEqual(users.filter { $0.isCurrentUser }.count, 1)
+        XCTAssertEqual(me.allTimePoints, before + 10)
+        
+        // The server has this phone's points, so every other phone sees them too
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let serverUsers = try JSONDecoder().decode([LeaderboardUser].self, from: data)
+        XCTAssertEqual(serverUsers.first { $0.id == me.id }?.allTimePoints, me.allTimePoints)
+    }
+    
+    // MARK: - 5. User Notification Preferences (Enable / Disable on Phone)
     
     func testNotificationPreferencesTogglePersistence() {
         let notif = ParkNotificationManager.shared

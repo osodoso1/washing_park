@@ -51,7 +51,7 @@ public struct LeaderboardCard: View {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
-                            Text(mvp.name)
+                            Text(mvp.displayName)
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(AppTheme.textPrimary)
                             
@@ -219,7 +219,7 @@ private struct LeaderboardSheet: View {
                             .font(.system(size: 24))
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(leaderboard.currentUser.name)
+                            Text(leaderboard.currentUser.displayName)
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(AppTheme.textPrimary)
                             
@@ -263,7 +263,7 @@ private struct LeaderboardSheet: View {
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack(spacing: 6) {
-                                        Text(user.name)
+                                        Text(user.displayName)
                                             .font(.system(size: 14, weight: user.isCurrentUser ? .black : .bold, design: .rounded))
                                             .foregroundColor(user.isCurrentUser ? AppTheme.burlingameBlue : AppTheme.textPrimary)
                                         
@@ -310,6 +310,10 @@ private struct LeaderboardSheet: View {
             }
             .background(Color(red: 0.96, green: 0.97, blue: 0.98).ignoresSafeArea())
             .navigationTitle("Community Leaderboard")
+            .task {
+                // Always show the latest shared board when someone opens the rankings
+                await CloudKitManager.shared.fetchLeaderboardFromCloud()
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
