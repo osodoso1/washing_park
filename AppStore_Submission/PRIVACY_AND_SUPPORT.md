@@ -68,7 +68,7 @@ Left a paddle, water bottle, or jacket by the courts? Snap a photo to post lost 
 Running a group session? Enter your players and let PickleMatch generate fair doubles matchups, manage the sitting queue, and track live game scores right at the net.
 
 • LIVE COURT WEATHER, AQI & CLUBHOUSE HOURS
-Check real-time Burlingame court temperature, wind speed, Air Quality Index (AQI), Clubhouse hours (8 AM–7 PM), and court light hours (until 10 PM) at a glance.
+Check real-time Burlingame court temperature, wind speed, Air Quality Index (AQI), today's Clubhouse hours with a live open/closed status, and court light hours (until 10 PM) at a glance.
 
 100% Free. No Ads. No Account Required. Built for the Burlingame pickleball community.
 ```

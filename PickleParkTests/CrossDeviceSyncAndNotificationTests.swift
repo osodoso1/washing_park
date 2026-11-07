@@ -205,3 +205,39 @@ final class CrossDeviceSyncAndNotificationTests: XCTestCase {
         XCTAssertTrue(UserDefaults.standard.bool(forKey: "wp_notifications_lost_found_enabled_v1"))
     }
 }
+
+// MARK: - Clubhouse hours follow the real weekday (Pacific time)
+
+final class ClubhouseScheduleTests: XCTestCase {
+    private func pacific(_ iso: String) -> Date {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: iso)!
+    }
+
+    func testFridayShowsFridayHoursNotMondayThursday() {
+        let fridayAfternoon = pacific("2026-11-06T16:47:00-08:00")
+        XCTAssertEqual(ClubhouseSchedule.weekday(at: fridayAfternoon), 6)
+        XCTAssertEqual(ClubhouseSchedule.stripLabel(at: fridayAfternoon), "Clubhouse Fri 8a–5p · Lights 10p")
+        XCTAssertEqual(ClubhouseSchedule.statusLabel(at: fridayAfternoon), "Open · Closes 5 PM")
+    }
+
+    func testClosedAfterFridayCloseRollsToSaturday() {
+        let fridayEvening = pacific("2026-11-06T17:01:00-08:00")
+        XCTAssertFalse(ClubhouseSchedule.isOpen(at: fridayEvening))
+        XCTAssertEqual(ClubhouseSchedule.statusLabel(at: fridayEvening), "Closed · Opens Sat 9 AM")
+    }
+
+    func testWeekdayAndWeekendHours() {
+        XCTAssertEqual(ClubhouseSchedule.stripLabel(at: pacific("2026-11-09T12:00:00-08:00")), "Clubhouse Mon 8a–8:30p · Lights 10p")
+        XCTAssertEqual(ClubhouseSchedule.stripLabel(at: pacific("2026-11-07T12:00:00-08:00")), "Clubhouse Sat 9a–2p · Lights 10p")
+        XCTAssertEqual(ClubhouseSchedule.statusLabel(at: pacific("2026-11-08T08:30:00-08:00")), "Closed · Opens 9 AM")
+    }
+
+    func testUsesPacificTimeRegardlessOfDeviceZone() {
+        // 00:30 UTC Saturday is still 4:30 PM Friday at the park.
+        let utcSaturday = pacific("2026-11-07T00:30:00Z")
+        XCTAssertEqual(ClubhouseSchedule.weekday(at: utcSaturday), 6)
+        XCTAssertTrue(ClubhouseSchedule.isOpen(at: utcSaturday))
+    }
+}

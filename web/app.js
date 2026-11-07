@@ -1653,10 +1653,108 @@ function resetTournament() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Clubhouse hours (Burlingame Community Center, 850 Burlingame Ave).
+// City of Burlingame posted Recreation Center hours, evaluated in Pacific time
+// so "today" matches the park regardless of the viewer's time zone.
+// Keys are JS weekdays (0 = Sunday … 6 = Saturday); values are minutes after midnight.
+// ---------------------------------------------------------------------------
+const CLUBHOUSE_HOURS = {
+  0: { open: 9 * 60, close: 14 * 60 },       // Sun 9:00 AM – 2:00 PM
+  1: { open: 8 * 60, close: 20 * 60 + 30 },  // Mon 8:00 AM – 8:30 PM
+  2: { open: 8 * 60, close: 20 * 60 + 30 },  // Tue
+  3: { open: 8 * 60, close: 20 * 60 + 30 },  // Wed
+  4: { open: 8 * 60, close: 20 * 60 + 30 },  // Thu
+  5: { open: 8 * 60, close: 17 * 60 },       // Fri 8:00 AM – 5:00 PM
+  6: { open: 9 * 60, close: 14 * 60 }        // Sat 9:00 AM – 2:00 PM
+};
+const CLUBHOUSE_ROWS = [
+  { label: 'Monday – Thursday', days: [1, 2, 3, 4] },
+  { label: 'Friday', days: [5] },
+  { label: 'Saturday', days: [6] },
+  { label: 'Sunday', days: [0] }
+];
+const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function parkNow(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23'
+  }).formatToParts(date);
+  const get = (type) => parts.find(p => p.type === type)?.value;
+  return {
+    weekday: SHORT_DAYS.indexOf(get('weekday')),
+    minute: (parseInt(get('hour'), 10) % 24) * 60 + parseInt(get('minute'), 10)
+  };
+}
+
+function clubhouseTime(minute, style) {
+  const h24 = Math.floor(minute / 60) % 24;
+  const m = minute % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const mm = String(m).padStart(2, '0');
+  if (style === 'compact') return m === 0 ? `${h12}${h24 >= 12 ? 'p' : 'a'}` : `${h12}:${mm}${h24 >= 12 ? 'p' : 'a'}`;
+  if (style === 'short') return m === 0 ? `${h12} ${h24 >= 12 ? 'PM' : 'AM'}` : `${h12}:${mm} ${h24 >= 12 ? 'PM' : 'AM'}`;
+  return `${h12}:${mm} ${h24 >= 12 ? 'PM' : 'AM'}`;
+}
+
+function clubhouseStatus(date = new Date()) {
+  const { weekday, minute } = parkNow(date);
+  const today = CLUBHOUSE_HOURS[weekday];
+  if (today && minute >= today.open && minute < today.close) {
+    return { weekday, isOpen: true, label: `Open · Closes ${clubhouseTime(today.close, 'short')}` };
+  }
+  if (today && minute < today.open) {
+    return { weekday, isOpen: false, label: `Closed · Opens ${clubhouseTime(today.open, 'short')}` };
+  }
+  for (let offset = 1; offset <= 7; offset++) {
+    const next = (weekday + offset) % 7;
+    if (CLUBHOUSE_HOURS[next]) {
+      return { weekday, isOpen: false, label: `Closed · Opens ${SHORT_DAYS[next]} ${clubhouseTime(CLUBHOUSE_HOURS[next].open, 'short')}` };
+    }
+  }
+  return { weekday, isOpen: false, label: 'Closed' };
+}
+
+function renderClubhouseHours(date = new Date()) {
+  const status = clubhouseStatus(date);
+  const today = CLUBHOUSE_HOURS[status.weekday];
+
+  const stripText = document.getElementById('clubhouse-strip-text');
+  if (stripText) {
+    const range = today ? `${clubhouseTime(today.open, 'compact')}–${clubhouseTime(today.close, 'compact')}` : 'closed';
+    stripText.innerText = `Clubhouse ${SHORT_DAYS[status.weekday]} ${range} · Court Lights: Dusk–10 PM`;
+  }
+  const stripDot = document.getElementById('clubhouse-strip-dot');
+  if (stripDot) {
+    stripDot.className = `w-2 h-2 rounded-full inline-block ${status.isOpen ? 'bg-emerald-500' : 'bg-slate-400'}`;
+    stripDot.title = status.label;
+  }
+
+  const badge = document.getElementById('clubhouse-status-badge');
+  if (badge) {
+    badge.innerText = status.label;
+    badge.className = `px-2 py-0.5 text-[10px] rounded-full font-bold normal-case tracking-normal ${status.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}`;
+  }
+
+  const rows = document.getElementById('clubhouse-hours-rows');
+  if (rows) {
+    rows.innerHTML = CLUBHOUSE_ROWS.map(row => {
+      const hours = CLUBHOUSE_HOURS[row.days[0]];
+      const range = hours ? `${clubhouseTime(hours.open)} – ${clubhouseTime(hours.close)}` : 'Closed';
+      const isToday = row.days.includes(status.weekday);
+      return isToday
+        ? `<div class="flex justify-between font-bold text-slate-900"><span>${row.label} (Today)</span><span class="text-blue-600">${range}</span></div>`
+        : `<div class="flex justify-between text-slate-700"><span>${row.label}</span><span>${range}</span></div>`;
+    }).join('');
+  }
+}
+
 // Init PWA
 window.addEventListener('DOMContentLoaded', () => {
   loadState();
   render();
+  renderClubhouseHours();
+  setInterval(renderClubhouseHours, 60 * 1000);
   fetchCityReservations();
   fetchWeather();
 

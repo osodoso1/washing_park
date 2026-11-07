@@ -86,7 +86,8 @@
       <div onclick="openModal('clubhouse-modal')" class="bg-blue-50/80 hover:bg-blue-100/80 border border-blue-100/90 rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition">
         <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
           <span class="text-blue-600">🏛️</span>
-          <span>Clubhouse: 8 AM–7 PM · Court Lights: Dusk–10 PM</span>
+          <span id="clubhouse-strip-dot" class="w-2 h-2 rounded-full bg-slate-400 inline-block"></span>
+          <span id="clubhouse-strip-text">Clubhouse hours · Court Lights: Dusk–10 PM</span>
         </div>
         <div class="text-[11px] font-bold text-blue-600 flex items-center gap-0.5">
           <span>Hours</span>
@@ -788,22 +789,15 @@
       <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
         <div class="flex items-center justify-between text-[11px] font-black text-slate-500 uppercase tracking-wide">
           <span>🏛️ Clubhouse & Desk</span>
-          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-bold">Open Today</span>
+          <span id="clubhouse-status-badge" class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded-full font-bold normal-case tracking-normal">Open</span>
         </div>
-        <div class="space-y-1.5 text-xs">
-          <div class="flex justify-between font-bold text-slate-900">
-            <span>Monday – Thursday</span>
-            <span class="text-blue-600">8:00 AM – 7:00 PM</span>
-          </div>
-          <div class="flex justify-between text-slate-700">
-            <span>Friday</span>
-            <span>8:00 AM – 5:00 PM</span>
-          </div>
-          <div class="flex justify-between text-slate-700">
-            <span>Saturday & Sunday</span>
-            <span>9:00 AM – 4:00 PM</span>
-          </div>
+        <div id="clubhouse-hours-rows" class="space-y-1.5 text-xs">
+          <div class="flex justify-between text-slate-700"><span>Monday – Thursday</span><span>8:00 AM – 8:30 PM</span></div>
+          <div class="flex justify-between text-slate-700"><span>Friday</span><span>8:00 AM – 5:00 PM</span></div>
+          <div class="flex justify-between text-slate-700"><span>Saturday</span><span>9:00 AM – 2:00 PM</span></div>
+          <div class="flex justify-between text-slate-700"><span>Sunday</span><span>9:00 AM – 2:00 PM</span></div>
         </div>
+        <div class="text-[10px] text-slate-500">City of Burlingame posted hours. Holiday hours may differ — call (650) 558-7300.</div>
       </div>
 
       <!-- Courts & Lights -->
